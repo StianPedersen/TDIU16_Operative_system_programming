@@ -1,3 +1,4 @@
+#pragma once
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,14 +6,14 @@
 #include "map.h"
 
 /* Recommended compile commmand:
- * 
+ *
  * gcc -Wall -Wextra -std=gnu99 -pedantic -g main.c map.c
  *
  * Recommended way to test your solution:
  *
  * valgrind --tool=memcheck ./a.out
  */
-#error Read comments above, then remove this line.
+// #error Read comments above, then remove this line.
 
 
 /* Can be used to inform compiler about unused parameters (prevent
@@ -54,7 +55,7 @@ char* my_strdup(char* str)
   char* dst = (char*)malloc(len);
   /*! copy all characters in src to dst */
   strncpy(dst, str, len);
-  
+
   return dst; /*(!) return our deep copy of str */
 }
 
@@ -75,7 +76,7 @@ int main()
     /* insecure, scanf may overflow the input buffer array *
      * very serious, but we ignore it in this test program */
     scanf("%s", input_buffer);
-    
+
     /*! allocates a copy of the input and inserts in map */
     obj = my_strdup(input_buffer);
     id = map_insert(&container, obj);
@@ -91,8 +92,16 @@ int main()
     obj = map_find(&container, id);
 
     /*! if it was found, display it */
-YOUR CODE
-  
+// YOUR CODE
+    if(obj != NULL)
+      {
+        printf("%s\n", obj);
+      }
+    else
+      {
+        printf("invalid index kjekkas\n");
+      }
+
     /* since we leave the value in the map we may use it again and
      * should not free the memory */
   }
@@ -102,12 +111,21 @@ YOUR CODE
   {
     printf("Enter id to remove value for: ");
     scanf("%d", &id);
-    
+
     /*! find and remove a value for a key in the map */
     obj = map_remove(&container, id);
 
     /*! if it was found, display it */
-YOUR CODE
+// YOUR CODE
+      if(obj != NULL)
+        {
+          printf("We removed: %s\n", obj);
+        }
+      else
+        {
+          printf("Cant remove object cuz it aint there homie\n");
+        }
+
     /* since we removed the value from the map we will never use it again and
      * must properly free the memory (if it was allocated) */
   }
@@ -115,10 +133,13 @@ YOUR CODE
   /*! print all strings representing an integer less than N */
   printf("Will now display all values less than N. Choose N: ");
   scanf("%d", &i);
-  map_for_each(&container, print_less, i);
-  
+
+   map_for_each(&container, print_less, i);
+
   /*! free all remaining memory and remove from map */
-  map_remove_if(&container, do_free, 0);
-  
+
+   map_remove_if(&container, do_free, 0);
+
+   map_for_each(&container, print_less, 10);
   return 0;
 }

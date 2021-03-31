@@ -6,7 +6,7 @@
 typedef char* value_t;
 typedef int key_t;
 
-#define MAP_SIZE 128
+#define MAP_SIZE 5
 
 struct map
 {

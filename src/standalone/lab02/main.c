@@ -79,6 +79,7 @@ int main()
 
     /*! allocates a copy of the input and inserts in map */
     obj = my_strdup(input_buffer);
+
     id = map_insert(&container, obj);
   }
 
@@ -99,7 +100,7 @@ int main()
       }
     else
       {
-        printf("invalid index kjekkas\n");
+        printf("invalid index \n");
       }
 
     /* since we leave the value in the map we may use it again and
@@ -123,9 +124,9 @@ int main()
         }
       else
         {
-          printf("Cant remove object cuz it aint there homie\n");
+          printf("Cant remove object because it is not there\n");
         }
-
+      free(obj);
     /* since we removed the value from the map we will never use it again and
      * must properly free the memory (if it was allocated) */
   }

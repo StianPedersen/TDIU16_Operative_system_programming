@@ -21,34 +21,41 @@ key_t map_insert(struct map* m, value_t v)
             return i;
           }
       }
+      free(v);
       return MAP_SIZE+1;
   }
 
 value_t map_find(struct map* m, key_t k)
   {
-    if(m->content[k] != NULL)
-      {
-        return m->content[k];
-      }
+  if((k < MAP_SIZE) & (k >= 0))
+    {
+      if(m->content[k] != NULL)
+        {
+          return m->content[k];
+        }
+    }
     return NULL;
   }
 
 value_t map_remove(struct map* m, key_t k)
   {
-    if(m->content[k] != NULL)
+    if((k < MAP_SIZE) & (k >= 0))
       {
-        value_t saved = m->content[k];
-        free(m->content[k]);
-        m->content[k] = NULL;
-        return saved;
+        if(m->content[k] != NULL)
+          {
+            value_t saved = m->content[k];
+            //free(m->content[k]);
+            m->content[k] = NULL;
+            return saved;
+          }
       }
     return NULL;
   }
 
 void map_for_each(struct map* m,
-    void (*exec)(key_t k, value_t v, int aux),
-    int aux)
-    {
+  void (*exec)(key_t k, value_t v, int aux),
+  int aux)
+  {
       for (int i = 0; i < MAP_SIZE; i++)
       {
         if(m->content[i] != NULL)
@@ -58,10 +65,10 @@ void map_for_each(struct map* m,
       }
     }
 
-  void map_remove_if(struct map* m,
-    bool (*cond)(key_t k, value_t v, int aux),
-    int aux)
-    {
+void map_remove_if(struct map* m,
+  bool (*cond)(key_t k, value_t v, int aux),
+  int aux)
+  {
       for (int i = 0; i < MAP_SIZE; i++)
       {
         if(cond(i,m->content[i], aux))

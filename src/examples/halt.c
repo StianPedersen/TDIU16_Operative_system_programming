@@ -10,6 +10,6 @@ int
 main (void)
 {
    //halt ();
-   exit (0);
+   exit(0);
   /* not reached */
 }

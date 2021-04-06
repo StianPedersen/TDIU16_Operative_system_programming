@@ -22,11 +22,6 @@ syscall_init (void)
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
-  void
-  halt (void)
-  {
-    printf("FELIX ÄR EN KUNG MEN INTE SÅ MYCKET RED \n");
-  }
 
 /* This array defined the number of arguments each syscall expects.
    For example, if you want to find out the number of arguments for
@@ -51,9 +46,21 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
+  // uint32_t eax = f->eax;
 
-  switch ( 0 /* retrive syscall number */ )
+  switch (esp[0] /* retrive syscall number */ )
   {
+    case SYS_HALT:
+    {
+      printf ("ENTERED SYS HALT!\n");
+      power_off();
+    }
+
+    case SYS_EXIT:
+      {
+        printf ("ENTERED SYS EXIT!\n");
+        process_exit(esp[1]);
+      }
     default:
     {
       printf ("Executed an unknown system call!\n");
@@ -61,7 +68,7 @@ syscall_handler (struct intr_frame *f)
       printf ("Stack top + 0: %d\n", esp[0]);
       printf ("Stack top + 1: %d\n", esp[1]);
 
-      thread_exit ();
+       thread_exit ();
     }
   }
 }

@@ -21,8 +21,8 @@ key_t map_insert(struct map* m, value_t v)
             return i;
           }
       }
-      free(v);
-      return MAP_SIZE+1;
+      // free(v);
+      return -1;
   }
 
 value_t map_find(struct map* m, key_t k)

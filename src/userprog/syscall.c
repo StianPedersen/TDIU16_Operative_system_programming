@@ -17,24 +17,30 @@
 static void syscall_handler (struct intr_frame *);
 
 void
-syscall_init (void) 
+syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
+  void
+  halt (void)
+  {
+    printf("FELIX ÄR EN KUNG MEN INTE SÅ MYCKET RED \n");
+  }
 
 /* This array defined the number of arguments each syscall expects.
    For example, if you want to find out the number of arguments for
    the read system call you shall write:
-   
+
    int sys_read_arg_count = argc[ SYS_READ ];
-   
+
    All system calls have a name such as SYS_READ defined as an enum
    type, see `lib/syscall-nr.h'. Use them instead of numbers.
  */
 const int argc[] = {
   /* basic calls */
-  0, 1, 1, 1, 2, 1, 1, 1, 3, 3, 2, 1, 1, 
+  // int h = argc{SYS_HALT};
+  0, 1, 1, 1, 2, 1, 1, 1, 3, 3, 2, 1, 1,
   /* not implemented */
   2, 1,    1, 1, 2, 1, 1,
   /* extended */
@@ -42,19 +48,19 @@ const int argc[] = {
 };
 
 static void
-syscall_handler (struct intr_frame *f) 
+syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
-  
+
   switch ( 0 /* retrive syscall number */ )
   {
     default:
     {
       printf ("Executed an unknown system call!\n");
-      
+
       printf ("Stack top + 0: %d\n", esp[0]);
       printf ("Stack top + 1: %d\n", esp[1]);
-      
+
       thread_exit ();
     }
   }

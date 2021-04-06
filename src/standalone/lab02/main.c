@@ -80,7 +80,12 @@ int main()
     /*! allocates a copy of the input and inserts in map */
     obj = my_strdup(input_buffer);
 
+
     id = map_insert(&container, obj);
+    if(id == -1)
+      {
+        free(obj);
+      }
   }
 
   /* remember to test with invalid keys (like 4711, or -1) */

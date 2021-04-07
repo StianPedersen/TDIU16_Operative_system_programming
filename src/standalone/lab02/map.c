@@ -21,7 +21,6 @@ key_t map_insert(struct map* m, value_t v)
             return i;
           }
       }
-      // free(v);
       return -1;
   }
 

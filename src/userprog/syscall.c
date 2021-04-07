@@ -51,15 +51,37 @@ syscall_handler (struct intr_frame *f)
   switch (esp[0] /* retrive syscall number */ )
   {
     case SYS_HALT:
-    {
-      printf ("ENTERED SYS HALT!\n");
-      power_off();
-    }
+      {
+        printf ("ENTERED SYS HALT!\n");
+        power_off();
+      }
 
     case SYS_EXIT:
       {
         printf ("ENTERED SYS EXIT!\n");
         process_exit(esp[1]);
+      }
+    case SYS_READ:
+      {
+        printf ("ENTERED SYS READ!\n");
+        int fd= esp[1];
+        char* buffer = esp[2];
+        unsigned int length = esp[3];
+        if(fd == STDIN_FILENO)
+        {
+          for (size_t i = 0; i < length; i++)
+          {
+            buffer = input_getc();
+          }
+          process_exit(length);
+          return 1;
+
+        }
+
+      }
+    case SYS_WRITE:
+      {
+        printf ("ENTERED SYS WRITE!\n");
       }
     default:
     {

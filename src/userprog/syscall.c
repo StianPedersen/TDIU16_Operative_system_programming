@@ -55,18 +55,20 @@ syscall_handler (struct intr_frame *f)
       {
         // printf ("ENTERED SYS HALT!\n");
         power_off();
+        break;
       }
 
     case SYS_EXIT:
       {
         // printf ("ENTERED SYS EXIT!\n");
         process_exit(esp[1]);
+        break;
       }
 
     case SYS_READ:
       {
         int fd= esp[1];
-        char* buffer = esp[2];
+        char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
         char c;
 
@@ -83,52 +85,75 @@ syscall_handler (struct intr_frame *f)
             printf("%c" , buffer[i]);
           }
           f->eax = length;
-          return length;
+          break;
+          // return length;
         }
          f->eax = -1;
-          return -1;
+         break;
+          // return -1;
       }
 
     case SYS_CREATE:
       {
-        const char* file_name= esp[1];
+        const char* file_name= (char*)esp[1];
         unsigned int initial_size = esp[2];
         printf ("ENTERED SYS CREATE!\n");
         printf ("%s %s %d!\n", "VARIABLES:", file_name, initial_size);
         f->eax = filesys_create(file_name, initial_size);
-        return f->eax;
+        break;
+        // return f->eax;
       }
     case SYS_OPEN:
       {
-        const char* file_name= esp[1];
+        const char* file_name= (char*)esp[1];
         printf ("ENTERED SYS OPEN!\n");
-        f->eax = filesys_open(file_name);
+        struct file* openfile = filesys_open(file_name);
         printf ("%s %s\n", "FILE_NAME:", file_name);
-        if(f->eax == NULL)
+        if(openfile == NULL)
         {
           f->eax = -1;
-          return f->eax;
+          break;
+          // return f->eax;
         }
-        int i = map_insert(f->eax, file_name);
+         f->eax = map_insert(&thread_current()->ourmap, openfile);
+        // int i=3;
         printf ("%s %d!\n", "map_insert:", i);
-        return i;
+        // f->eax = i;
+        break;
+        // return i;
       }
 
     case SYS_WRITE:
       {
         int fd= esp[1];
-        char* buffer = esp[2];
+        char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
-
-        if(fd != STDIN_FILENO)
+        // int f = map_find(&thread_current()->ourmap, fd)
+        if(fd == STDOUT_FILENO)
         {
           putbuf(buffer, length);
           f->eax = length;
-          return length;
+          break;
         }
-        f->eax = -1;
-          return -1;
+        else if(map_find(&thread_current()->ourmap,fd) != NULL)
+        {
+          f->eax = length;
+          break;
+        }
 
+        f->eax = -1;
+        break;
+      }
+    case SYS_CLOSE:
+      {
+        int fd= esp[1];
+        struct file *file = map_find(&thread_current()->ourmap,fd);
+        if(file != NULL)
+        {
+          map_remove(&thread_current()->ourmap,fd);
+          filesys_close(file);
+        }
+        break;
       }
     default:
     {

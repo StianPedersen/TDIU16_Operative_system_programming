@@ -115,7 +115,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
 
   /* YES! You may want add stuff here. */
-  map_init(&t->ourmap);
+    map_init(&t->ourmap);
+
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -127,6 +128,8 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
+
+  // map_init(&t->ourmap);
 
   /* Start preemptive thread scheduling. */
   intr_enable ();

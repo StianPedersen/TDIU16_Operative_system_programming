@@ -71,8 +71,9 @@ syscall_handler (struct intr_frame *f)
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
         char c;
+        struct file* filen = map_find(&thread_current()->ourmap,fd);
 
-        if(fd != STDOUT_FILENO)
+        if(fd == STDIN_FILENO)
         {
           for (size_t i = 0; i < length; i++)
           {
@@ -86,11 +87,17 @@ syscall_handler (struct intr_frame *f)
           }
           f->eax = length;
           break;
-          // return length;
+        }
+        else if(filen != NULL)
+        {
+          // struct file* filen = map_find(&thread_current()->ourmap,fd);
+          f->eax= file_read(filen, buffer, length);
+          // printf("%s", ":",buffer);
+          // f->eax = length;
+          break;
         }
          f->eax = -1;
          break;
-          // return -1;
       }
 
     case SYS_CREATE:
@@ -113,14 +120,10 @@ syscall_handler (struct intr_frame *f)
         {
           f->eax = -1;
           break;
-          // return f->eax;
         }
          f->eax = map_insert(&thread_current()->ourmap, openfile);
-        // int i=3;
-        printf ("%s %d!\n", "map_insert:", i);
-        // f->eax = i;
         break;
-        // return i;
+
       }
 
     case SYS_WRITE:
@@ -128,19 +131,19 @@ syscall_handler (struct intr_frame *f)
         int fd= esp[1];
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
-        // int f = map_find(&thread_current()->ourmap, fd)
+        struct file* filen = map_find(&thread_current()->ourmap,fd);
         if(fd == STDOUT_FILENO)
         {
           putbuf(buffer, length);
           f->eax = length;
           break;
         }
-        else if(map_find(&thread_current()->ourmap,fd) != NULL)
+        else if(filen != NULL)
         {
+          file_write(filen,buffer,length);
           f->eax = length;
           break;
         }
-
         f->eax = -1;
         break;
       }
@@ -155,10 +158,41 @@ syscall_handler (struct intr_frame *f)
         }
         break;
       }
+    case SYS_REMOVE:
+      {
+        // int fd= esp[1];
+        char* name = (char*)esp[1];
+        // unsigned int length = esp[3];
+        f->eax = filesys_remove(name);
+
+        break;
+      }
+    case SYS_SEEK:
+      {
+        int fd= esp[1];
+        // char* name = (char*)esp[1];
+        unsigned int length = esp[2];
+        struct file* filen = map_find(&thread_current()->ourmap,fd);
+        if (filen != NULL)
+        {
+          file_seek(filen,length);
+        }
+        break;
+      }
+    case SYS_TELL:
+      {
+        int fd= esp[1];
+        struct file* filen = map_find(&thread_current()->ourmap,fd);
+        if (filen != NULL)
+        {
+          f->eax = file_tell(filen);
+        }
+        f->eax = -1;
+        break;
+      }
     default:
     {
       printf ("Executed an unknown system call!\n");
-
       printf ("Stack top + 0: %d\n", esp[0]);
       printf ("Stack top + 1: %d\n", esp[1]);
 

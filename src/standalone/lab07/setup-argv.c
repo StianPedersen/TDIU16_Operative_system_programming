@@ -195,7 +195,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 
 
   /* calculate the bytes needed to store the command_line */
-  line_size = strlen(command_line+1);
+  line_size = strlen(command_line)+1;
   STACK_DEBUG("# line_size = %d\n", line_size);
 
   /* round up to make it even divisible by 4 */
@@ -208,7 +208,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   STACK_DEBUG("# argc = %d\n", argc);
 
   /* calculate the size needed on our simulated stack */
-  total_size = YOUR_CODE_HERE;
+  total_size = (argc * sizeof(char*)) + line_size ;
   STACK_DEBUG("# total_size = %d\n", total_size);
 
 

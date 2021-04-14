@@ -43,7 +43,6 @@ value_t map_remove(struct map* m, key_t k)
         if(m->content[k] != NULL)
           {
             value_t saved = m->content[k];
-            //free(m->content[k]);
             m->content[k] = NULL;
             return saved;
           }

@@ -68,8 +68,7 @@ syscall_handler (struct intr_frame *f)
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
         char c;
-        struct file* filen = map_find(&thread_current()->ourmap,fd);
-
+        
         if(fd == STDIN_FILENO)
         {
           for (size_t i = 0; i < length; i++)
@@ -85,8 +84,9 @@ syscall_handler (struct intr_frame *f)
           f->eax = length;
           break;
         }
-        else if(filen != NULL)
+        else if(map_find(&thread_current()->ourmap,fd) != NULL)
         {
+          struct file* filen = map_find(&thread_current()->ourmap,fd);
           f->eax= file_read(filen, buffer, length);
           break;
         }

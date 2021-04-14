@@ -47,20 +47,17 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
-  // uint32_t eax = f->eax;
 
   switch (esp[0] /* retrive syscall number */ )
   {
     case SYS_HALT:
       {
-        // printf ("ENTERED SYS HALT!\n");
         power_off();
         break;
       }
 
     case SYS_EXIT:
       {
-        // printf ("ENTERED SYS EXIT!\n");
         process_exit(esp[1]);
         break;
       }
@@ -101,17 +98,14 @@ syscall_handler (struct intr_frame *f)
       {
         const char* file_name= (char*)esp[1];
         unsigned int initial_size = esp[2];
-        printf ("ENTERED SYS CREATE!\n");
         printf ("%s %s %d!\n", "VARIABLES:", file_name, initial_size);
         f->eax = filesys_create(file_name, initial_size);
         break;
-        // return f->eax;
       }
 
     case SYS_OPEN:
       {
         const char* file_name= (char*)esp[1];
-        printf ("ENTERED SYS OPEN!\n");
         struct file* openfile = filesys_open(file_name);
         printf ("%s %s\n", "FILE_NAME:", file_name);
         if(openfile == NULL)
@@ -119,7 +113,12 @@ syscall_handler (struct intr_frame *f)
           f->eax = -1;
           break;
         }
+
         f->eax = map_insert(&thread_current()->ourmap, openfile);
+        if(f->eax == -1)
+        {
+          filesys_close(openfile);
+        }
         break;
       }
 
@@ -169,7 +168,7 @@ syscall_handler (struct intr_frame *f)
         int fd= esp[1];
         unsigned int length = esp[2];
         struct file* filen = map_find(&thread_current()->ourmap,fd);
-        if (filen != NULL)
+        if (filen != NULL && length < file_length(filen))
         {
           file_seek(filen,length);
         }

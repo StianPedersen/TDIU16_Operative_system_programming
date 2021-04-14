@@ -21,7 +21,6 @@
 
 #include "userprog/flist.h"
 #include "userprog/plist.h"
-
 /* HACK defines code you must remove and implement in a proper way */
 #define HACK
 
@@ -229,6 +228,17 @@ process_cleanup (void)
   struct thread  *cur = thread_current ();
   uint32_t       *pd  = cur->pagedir;
   int status = -1;
+
+  struct map* map = &cur->ourmap;
+  for (int i = 0; i < MAP_SIZE; i++)
+  {
+    if(map->content[i] != NULL)
+    {
+      file_close(map->content[i]);
+      map_remove(map,i);
+    }
+  }
+
 
   debug("%s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
 

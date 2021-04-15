@@ -208,25 +208,45 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   STACK_DEBUG("# argc = %d\n", argc);
 
   /* calculate the size needed on our simulated stack */
-  total_size = (argc * sizeof(char*)) + line_size ;
+  total_size = (argc * sizeof(char*)) + line_size + sizeof(char**) + sizeof(int) + sizeof(void(*)(void));
   STACK_DEBUG("# total_size = %d\n", total_size);
 
-
   /* calculate where the final stack top will be located */
-  esp = YOUR_CODE_HERE;
-
+  esp = (struct main_args*)((unsigned*)stack_top-total_size);
   /* setup return address and argument count */
-  esp->ret = YOUR_CODE_HERE;
-  esp->argc = YOUR_CODE_HERE;
+  esp->ret = 0;
+  esp->argc = argc;
   /* calculate where in the memory the argv array starts */
-  esp->argv = YOUR_CODE_HERE;
+  esp->argv = (char**)esp + 3;
 
   /* calculate where in the memory the words is stored */
-  cmd_line_on_stack = YOUR_CODE_HERE;
+  cmd_line_on_stack = (char*)esp->argv + argc;
 
   /* copy the command_line to where it should be in the stack */
+  //cmdl_size?
+    strncpy(cmd_line_on_stack, command_line, line_size);
 
   /* build argv array and insert null-characters after each word */
+  char* token;
+  // char* cmdl = (char*)command_line;
+
+  for (token = strtok_r(/*(char*)command_line*/," ", &ptr_save);
+   token != NULL; token = strtok_r(NULL, " ", &ptr_save))
+    {
+      // while(token)
+      //   {
+      //     char* ourarray;
+      //     for(unsigned int x = 0 ; x < 4; x++)
+      //     {
+      //       if(strlen(token) >= x)
+      //       {
+      //         ourarray[x] = token[x];
+      //       }
+      //     }
+      //     esp->argv[i] = ourarray;
+      //     i++;
+      //   }
+    }
 
   return esp; /* the new stack top */
 }

@@ -230,9 +230,10 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   char* token;
   // char* cmdl = (char*)command_line;
 
-  for (token = strtok_r(/*(char*)command_line*/," ", &ptr_save);
+  for (token = strtok_r(/*(char*)command_line*/ ," ", &ptr_save);
    token != NULL; token = strtok_r(NULL, " ", &ptr_save))
     {
+      //FELIX BE BBAD YOU KNOW
       // while(token)
       //   {
       //     char* ourarray;

@@ -220,33 +220,20 @@ void* setup_main_stack(const char* command_line, void* stack_top)
   esp->argv = (char**)esp + 3;
 
   /* calculate where in the memory the words is stored */
-  cmd_line_on_stack = (char*)esp->argv + argc;
+  cmd_line_on_stack = (char*)(esp->argv + argc+1);
 
   /* copy the command_line to where it should be in the stack */
   //cmdl_size?
     strncpy(cmd_line_on_stack, command_line, line_size);
 
   /* build argv array and insert null-characters after each word */
-  char* token;
-  // char* cmdl = (char*)command_line;
 
-  for (token = strtok_r(/*(char*)command_line*/ ," ", &ptr_save);
+
+  for (char* token = strtok_r(cmd_line_on_stack," ", &ptr_save);
    token != NULL; token = strtok_r(NULL, " ", &ptr_save))
     {
-      //FELIX BE BBAD YOU KNOW
-      // while(token)
-      //   {
-      //     char* ourarray;
-      //     for(unsigned int x = 0 ; x < 4; x++)
-      //     {
-      //       if(strlen(token) >= x)
-      //       {
-      //         ourarray[x] = token[x];
-      //       }
-      //     }
-      //     esp->argv[i] = ourarray;
-      //     i++;
-      //   }
+      esp->argv[i] = token;
+      i++;
     }
 
   return esp; /* the new stack top */

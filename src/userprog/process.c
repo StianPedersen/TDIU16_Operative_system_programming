@@ -14,6 +14,8 @@
 #include "threads/interrupt.h" /* if_ */
 #include "threads/init.h"      /* power_off() */
 
+#include "standalone/lab07/setup-argv.c"
+
 /* Headers not yet used that you may need for various reasons. */
 #include "threads/synch.h"
 #include "threads/malloc.h"
@@ -29,6 +31,8 @@
  * the process subsystem. */
 void process_init(void)
 {
+  printf("\nKÖRS PROCESS INIT?\n\n");
+  //setup main stack?? probably not
 }
 
 /* This function is currently never called. As thread_exit does not
@@ -150,7 +154,7 @@ start_process (struct parameters_to_start_process* parameters)
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
 
-    HACK if_.esp -= 12; /* Unacceptable solution. */
+    // HACK if_.esp -= 12; /* Unacceptable solution. */
 
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content

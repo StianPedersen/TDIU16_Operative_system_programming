@@ -3,6 +3,11 @@
 
 #include "threads/thread.h"
 
+int count_args(const char* buf, const char* delimeters);
+bool exists_in(char c, const char* d);
+void* setup_main_stack(const char* command_line, void* stack_top);
+void dump(void* ptr, int size);
+
 void process_init (void);
 void process_print_list (void);
 void process_exit (int status);

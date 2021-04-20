@@ -230,7 +230,8 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 
 
   for (char* token = strtok_r(cmd_line_on_stack," ", &ptr_save);
-   token != NULL; token = strtok_r(NULL, " ", &ptr_save))
+        token != NULL;
+        token = strtok_r(NULL, " ", &ptr_save))
     {
       esp->argv[i] = token;
       i++;

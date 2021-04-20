@@ -239,19 +239,16 @@ process_execute (const char *command_line)
   /* SCHEDULES function `start_process' to run (LATER) */
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
-  arguments.P_id = thread_id;
-  process_id = thread_id;
+
+  //process_id = thread_id;
+  arguments.P_id = -1;
 
   if(thread_id != -1)
   {
-    /*Does semaphore down because waiting for stack to be completed*/
+    /*Does sema_down because waiting for stack to be completed*/
     sema_down(&arguments.oursema);
     process_id=arguments.P_id;
   }
-
-  /* AVOID bad stuff by turning off. YOU will fix this! */
-  // power_off();
-
 
   /* WHICH thread may still be using this right now? */
   free(arguments.command_line);
@@ -295,8 +292,6 @@ start_process (struct parameters_to_start_process* parameters)
         thread_current()->name,
         thread_current()->tid,
         success);
-  // void* simulated_stack = malloc(4096);
-  // void* simulated_stack_top = (void*)((unsigned long)simulated_stack + 4096);
   if (success)
   {
     /* We managed to load the new program to a process, and have
@@ -309,7 +304,6 @@ start_process (struct parameters_to_start_process* parameters)
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
 
-      // HACK if_.esp -= 12; /* Unacceptable solution. */
         if_.esp = setup_main_stack(parameters->command_line, if_.esp);
 
     /* The stack and stack pointer should be setup correct just before
@@ -318,15 +312,16 @@ start_process (struct parameters_to_start_process* parameters)
 
      // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
-
+     parameters->P_id = thread_current()->tid;
   }
-  sema_up(&parameters->oursema);
+
 
   debug("%s#%d: start_process(\"%s\") DONE\n",
         thread_current()->name,
         thread_current()->tid,
         parameters->command_line);
 
+  sema_up(&parameters->oursema);
 
   /* If load fail, quit. Load may fail for several reasons.
      Some simple examples:
@@ -336,7 +331,6 @@ start_process (struct parameters_to_start_process* parameters)
   */
   if ( ! success )
   {
-    parameters->P_id=-1;
     thread_exit ();
   }
 

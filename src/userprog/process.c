@@ -199,6 +199,7 @@ struct parameters_to_start_process
 {
   char* command_line;
   struct semaphore oursema;
+  int P_id;
 };
 
 static void
@@ -233,15 +234,19 @@ process_execute (const char *command_line)
 
   strlcpy_first_word (debug_name, command_line, 64);
 
+  /*INIT semaphore */
   sema_init(&arguments.oursema,0);
   /* SCHEDULES function `start_process' to run (LATER) */
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
+  arguments.P_id = thread_id;
   process_id = thread_id;
 
   if(thread_id != -1)
   {
+    /*Does semaphore down because waiting for stack to be completed*/
     sema_down(&arguments.oursema);
+    process_id=arguments.P_id;
   }
 
   /* AVOID bad stuff by turning off. YOU will fix this! */
@@ -331,6 +336,7 @@ start_process (struct parameters_to_start_process* parameters)
   */
   if ( ! success )
   {
+    parameters->P_id=-1;
     thread_exit ();
   }
 

@@ -14,7 +14,6 @@
 #include "threads/interrupt.h" /* if_ */
 #include "threads/init.h"      /* power_off() */
 
-#include "standalone/lab07/setup-argv.c"
 
 /* Headers not yet used that you may need for various reasons. */
 #include "threads/synch.h"

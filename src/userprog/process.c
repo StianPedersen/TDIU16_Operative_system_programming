@@ -123,20 +123,20 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 
   /* calculate the bytes needed to store the command_line */
   line_size = strlen(command_line)+1;
-  STACK_DEBUG("# line_size = %d\n", line_size);
+  // STACK_DEBUG("# line_size = %d\n", line_size);
 
   /* round up to make it even divisible by 4 */
   int rounding_number = line_size%4;
   line_size = line_size + rounding_number;
-  STACK_DEBUG("# line_size (aligned) = %d\n", line_size);
+  // STACK_DEBUG("# line_size (aligned) = %d\n", line_size);
 
   /* calculate how many words the command_line contain */
   argc = count_args(command_line, " ");
-  STACK_DEBUG("# argc = %d\n", argc);
+  // STACK_DEBUG("# argc = %d\n", argc);
 
   /* calculate the size needed on our simulated stack */
   total_size = (argc * sizeof(char*)) + line_size + sizeof(char**) + sizeof(int) + sizeof(void(*)(void));
-  STACK_DEBUG("# total_size = %d\n", total_size);
+  // STACK_DEBUG("# total_size = %d\n", total_size);
 
   /* calculate where the final stack top will be located */
   esp = (struct main_args*)((unsigned*)stack_top-total_size);
@@ -311,9 +311,9 @@ start_process (struct parameters_to_start_process* parameters)
        the process start, so this is the place to dump stack content
        for debug purposes. Disable the dump when it works. */
 
-     dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
+     // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
 
-     // dump(if_.esp, (char*)if_.esp - (char*)if_.esp);
+
   }
   sema_up(&parameters->oursema);
 

@@ -15,6 +15,8 @@
 #include "devices/input.h"
 #include "flist.h"
 
+#include "plist.h"
+
 static void syscall_handler (struct intr_frame *);
 
 void
@@ -68,7 +70,7 @@ syscall_handler (struct intr_frame *f)
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
         char c;
-        
+
         if(fd == STDIN_FILENO)
         {
           for (size_t i = 0; i < length; i++)
@@ -200,6 +202,11 @@ syscall_handler (struct intr_frame *f)
         f->eax = -1;
         break;
       }
+
+    case SYS_PLIST:
+    {
+      print_list();
+    }
 
     default:
     {

@@ -44,15 +44,15 @@ int main(int argc, char* argv[])
   unsigned j = 0;
   unsigned simul = 0;
   unsigned repeat = 0;
-  printf("KOMMER TILL LONGRUN \n\n");
-  plist();
+  // printf("KOMMER TILL LONGRUN \n\n");
+
   if (argc != 3)
   {
-    printf("Usage: %s simultaneous repeat\n"
-           "Where 'simultaneous' is the number of simultaneous processes to \n"
-           "start before busywaiting a short while, and 'repeat' how many \n"
-           "times this should be repeated.\n", argv[0]
-      );
+    // printf("Usage: %s simultaneous repeat\n"
+    //        "Where 'simultaneous' is the number of simultaneous processes to \n"
+    //        "start before busywaiting a short while, and 'repeat' how many \n"
+    //        "times this should be repeated.\n", argv[0]
+    //  );
     return -1;
   }
 
@@ -61,21 +61,22 @@ int main(int argc, char* argv[])
 
   if (simul > MAX_SIMULTANEOUS)
   {
-    printf("This test program is compiled with a limitation to max %d \n"
-           "simultaneos processes.\n", MAX_SIMULTANEOUS);
+    // printf("This test program is compiled with a limitation to max %d \n"
+    //        "simultaneos processes.\n", MAX_SIMULTANEOUS);
     return -1;
   }
 
   if (repeat > MAX_REPEAT)
   {
-    printf("This test program is compiled with a limitation to max %d \n"
-           "repetitions.\n", MAX_REPEAT);
+    // printf("This test program is compiled with a limitation to max %d \n"
+    //        "repetitions.\n", MAX_REPEAT);
     return -1;
   }
 
-  printf("Will try to start a total of %d processes in groups of %d\n",
-         simul * repeat, simul);
+  // printf("Will try to start a total of %d processes in groups of %d\n",
+  //        simul * repeat, simul);
 
+  //plist();
   for (j = 0; j < repeat; ++j)
   {
     /* you may have to increase the multiple to more than 5 */
@@ -83,14 +84,15 @@ int main(int argc, char* argv[])
 
     snprintf(cmd, BUF_SIZE, "generic_parent %s %i %i", "dummy", j*simul, simul);
 
-    // exec(cmd);
+     exec(cmd);
 
-    plist();
+
 
     /* since we do not have the wait systemcall yet */
-    printf("Now entering busy-loop to let some processes finish\n");
+    //printf("Now entering busy-loop to let some processes finish\n");
     while (ticks--)
       ;
   }
+  plist();
   return 0;
 }

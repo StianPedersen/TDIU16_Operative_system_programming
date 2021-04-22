@@ -319,7 +319,7 @@ start_process (struct parameters_to_start_process* parameters)
 
      // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
      //LÄGG TILL PROCESS I LISTAN
-     plist_insert(&plist, thread_current()->tid, parameters->parent_id);
+     plist_insert(&plist, thread_current()->tid, parameters->parent_id, thread_current()->name);
      parameters->P_id = thread_current()->tid;
   }
 
@@ -394,7 +394,26 @@ process_cleanup (void)
   struct thread  *cur = thread_current ();
   uint32_t       *pd  = cur->pagedir;
   int status = -1;
+  struct running_process *cur_process = plist_find(&plist, cur->tid);
+  if(cur_process != NULL)
+  {
+    cur_process->alive=false;
+    parent = plist_find(&plist, cur_process->parent_id);
+    if((parent != NULL && parent->alive == false) || parent==NULL)
+    {
+      plist_remove(&plist, cur_process->id);
+    }
+    //LOOK FOR CHILDREN
+    for(int i=0; i<LIST_SIZE; i++)
+    {
+      if((plist->content[i].parent_id==cur_process->id) && (plist->content[i].alive==false))
+      {
+        //KILL CHILDREN
+        plist_remove(&plist, plist->content[i].id);
+      }
+    }
 
+  }
   struct map* map = &cur->ourmap;
   for (int i = 0; i < MAP_SIZE; i++)
   {
@@ -404,6 +423,7 @@ process_cleanup (void)
       map_remove(map,i);
     }
   }
+
 
 
   debug("%s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);

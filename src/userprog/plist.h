@@ -37,6 +37,7 @@
    bool parent_alive;
    bool free;
    bool alive;
+   char* name;
    struct semaphore process_sema;
  };
 
@@ -49,10 +50,14 @@
 
 void plist_init(struct process_list* plist);
 
-int plist_insert(struct process_list* plist, int id, int parentID);
+int plist_insert(struct process_list* plist, int id, int parentID, char* name);
 
 void print_list(struct process_list* plist);
 
+running_process plist_find(struct process_list* plist, int id);
 
+void plist_remove(struct process_list* plist, int id);
+
+//void plist_kill(struct process_list* plist, int id);
 
 #endif

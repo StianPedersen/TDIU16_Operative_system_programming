@@ -212,8 +212,8 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
-
-
+      const char* command_line = (char*)esp[1];
+      f->eax=process_execute(command_line);
 
       break;
     }

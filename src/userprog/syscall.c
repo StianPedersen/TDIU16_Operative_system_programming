@@ -205,8 +205,19 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_PLIST:
     {
-      print_list();
+      printf("KOMMER TILL SYSCALL SYS_PLIST\n\n");
+      process_print_list();
+      break;
     }
+
+    case SYS_EXEC:
+    {
+
+
+
+      break;
+    }
+
 
     default:
     {

@@ -1,7 +1,7 @@
 #ifndef _PLIST_H_
 #define _PLIST_H_
 
-
+#include "threads/synch.h"
 /* Place functions to handle a running process here (process list).
 
    plist.h : Your function declarations and documentation.
@@ -28,8 +28,30 @@
      clean, readable format.
 
  */
+   #define LIST_SIZE 100
+ struct running_process
+ {
+   int id;
+   int parent_id;
+   int exit_code;
+   bool parent_alive;
+   bool free;
+   bool alive;
+   struct semaphore process_sema;
+ };
 
-  void print_list();
+
+
+  struct process_list
+  {
+    struct running_process content [LIST_SIZE];
+  };
+
+void plist_init(struct process_list* plist);
+
+int plist_insert(struct process_list* plist, int id, int parentID);
+
+void print_list(struct process_list* plist);
 
 
 

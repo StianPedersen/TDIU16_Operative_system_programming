@@ -44,6 +44,7 @@ int main(int argc, char* argv[])
   unsigned j = 0;
   unsigned simul = 0;
   unsigned repeat = 0;
+  printf("KOMMER TILL LONGRUN \n\n");
   plist();
   if (argc != 3)
   {

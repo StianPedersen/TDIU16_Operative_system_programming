@@ -171,9 +171,12 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 
 /* This function is called at boot time (threads/init.c) to initialize
  * the process subsystem. */
+ struct process_list plist;
 void process_init(void)
 {
-  // printf("\nKÖRS PROCESS INIT?\n\n");
+
+  plist_init(&plist);
+   printf("\nKÖRS PROCESS INIT?\n\n");
   //setup main stack?? probably not
 }
 
@@ -192,6 +195,7 @@ void process_exit(int status)
  * relevant debug information in a clean, readable format. */
 void process_print_list()
 {
+ print_list(&plist);
 }
 
 
@@ -200,6 +204,7 @@ struct parameters_to_start_process
   char* command_line;
   struct semaphore oursema;
   int P_id;
+  int parent_id;
 };
 
 static void
@@ -237,6 +242,7 @@ process_execute (const char *command_line)
   /*INIT semaphore */
   sema_init(&arguments.oursema,0);
   /* SCHEDULES function `start_process' to run (LATER) */
+  arguments.parent_id=thread_current()->tid;
   thread_id = thread_create (debug_name, PRI_DEFAULT,
                              (thread_func*)start_process, &arguments);
 
@@ -247,6 +253,7 @@ process_execute (const char *command_line)
   {
     /*Does sema_down because waiting for stack to be completed*/
     sema_down(&arguments.oursema);
+
     process_id=arguments.P_id;
   }
 
@@ -311,7 +318,8 @@ start_process (struct parameters_to_start_process* parameters)
        for debug purposes. Disable the dump when it works. */
 
      // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
-
+     //LÄGG TILL PROCESS I LISTAN
+     plist_insert(&plist, thread_current()->tid, parameters->parent_id);
      parameters->P_id = thread_current()->tid;
   }
 
@@ -333,6 +341,7 @@ start_process (struct parameters_to_start_process* parameters)
   {
     thread_exit ();
   }
+
 
   /* Start the user process by simulating a return from an interrupt,
      implemented by intr_exit (in threads/intr-stubs.S). Because

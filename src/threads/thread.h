@@ -96,6 +96,7 @@ struct thread
 
     /* YES! You may want to add stuff. But make note of point 2 above. */
       struct map ourmap;
+      
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

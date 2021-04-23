@@ -58,7 +58,7 @@ void print_list(struct process_list* plist)
   //lock_release(&pid_lock);
 }
 
-running_process* plist_find(struct process_list* plist, int id)
+struct running_process* plist_find(struct process_list* plist, int id)
 {
   lock_acquire(&pid_lock);
   for (unsigned int i = 0; i < LIST_SIZE; i++)
@@ -67,7 +67,7 @@ running_process* plist_find(struct process_list* plist, int id)
         {
 
           lock_release(&pid_lock);
-          return plist->content[i];
+          return &plist->content[i];
         }
     }
     lock_release(&pid_lock);

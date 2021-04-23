@@ -28,7 +28,7 @@
      clean, readable format.
 
  */
-   #define LIST_SIZE 100
+ #define LIST_SIZE 100
  struct running_process
  {
    int id;
@@ -43,8 +43,8 @@
 
 
 
-  struct process_list
-  {
+struct process_list
+{
     struct running_process content [LIST_SIZE];
   };
 
@@ -54,7 +54,7 @@ int plist_insert(struct process_list* plist, int id, int parentID, char* name);
 
 void print_list(struct process_list* plist);
 
-running_process plist_find(struct process_list* plist, int id);
+struct running_process* plist_find(struct process_list* plist, int id);
 
 void plist_remove(struct process_list* plist, int id);
 

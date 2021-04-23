@@ -141,11 +141,16 @@ close (int fd)
   syscall1 (SYS_CLOSE, fd);
 }
 
-
 void
 plist (void)
 {
   syscall0 (SYS_PLIST);
+}
+
+void
+sleep (int millis)
+{
+  syscall1 (SYS_SLEEP, millis);
 }
 
 

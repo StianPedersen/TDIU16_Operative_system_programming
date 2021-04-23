@@ -398,7 +398,7 @@ process_cleanup (void)
   if(cur_process != NULL)
   {
     cur_process->alive=false;
-    parent = plist_find(&plist, cur_process->parent_id);
+    struct running_process* parent = plist_find(&plist, cur_process->parent_id);
     if((parent != NULL && parent->alive == false) || parent==NULL)
     {
       plist_remove(&plist, cur_process->id);
@@ -406,10 +406,10 @@ process_cleanup (void)
     //LOOK FOR CHILDREN
     for(int i=0; i<LIST_SIZE; i++)
     {
-      if((plist->content[i].parent_id==cur_process->id) && (plist->content[i].alive==false))
+      if((plist.content[i].parent_id==cur_process->id) && (plist.content[i].alive==false))
       {
         //KILL CHILDREN
-        plist_remove(&plist, plist->content[i].id);
+        plist_remove(&plist, plist.content[i].id);
       }
     }
 

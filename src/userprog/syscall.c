@@ -16,6 +16,7 @@
 #include "flist.h"
 
 #include "plist.h"
+#include "devices/timer.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -205,19 +206,21 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_PLIST:
     {
-      printf("KOMMER TILL SYSCALL SYS_PLIST\n\n");
       process_print_list();
-      break;
     }
 
-    case SYS_EXEC:
+    case SYS_SLEEP:
     {
-      const char* command_line = (char*)esp[1];
-      f->eax=process_execute(command_line);
-
+      uint16_t init= esp[1];
+      timer_init(init);
+      timer_msleep(init);
       break;
     }
 
+    case SYS_WAIT:
+    {
+      break;
+    }
 
     default:
     {

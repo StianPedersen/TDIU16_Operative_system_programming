@@ -6,24 +6,21 @@
 
 
   static struct lock pid_lock;
-  //struct running_process* process_list [LIST_SIZE];
-  // struct process_list
-  // {
-  //   running_process* content [LIST_SIZE];
-  // };
 
-  void plist_init(struct process_list* plist)
-  {
+
+void plist_init(struct process_list* plist)
+{
     lock_init(&pid_lock);
     printf("PLIST INIT\n");
     for(int i =0; i<LIST_SIZE; i++)
     {
       plist->content[i].free=true;
       sema_init(&(plist->content[i].process_sema),0);
+      lock_init(&plist->content[i].proc_lock);
+      cond_init(&plist->content[i].proc_cond);
     }
 
   };
-
 
 int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
 {

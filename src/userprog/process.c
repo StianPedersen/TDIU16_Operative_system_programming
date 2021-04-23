@@ -174,10 +174,7 @@ void* setup_main_stack(const char* command_line, void* stack_top)
  struct process_list plist;
 void process_init(void)
 {
-
   plist_init(&plist);
-   printf("\nKÖRS PROCESS INIT?\n\n");
-  //setup main stack?? probably not
 }
 
 /* This function is currently never called. As thread_exit does not
@@ -187,7 +184,9 @@ void process_init(void)
  * from thread_exit - do not call cleanup twice! */
 void process_exit(int status)
 {
-  printf("%s %d\n", "STATUS PÅ EXIT     :", status);
+  struct running_process* cur = plist_find(&plist, thread_current()->tid);
+  cur->exit_code = status;
+  // printf("\n%s %d\n", "STATUS PÅ EXIT     :", status);
   thread_exit();
 }
 
@@ -370,6 +369,20 @@ process_wait (int child_id)
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
+  struct running_process* child = plist_find(&plist, child_id);
+    struct running_process* parent = plist_find(&plist, cur->tid);
+  if((child != NULL) && (child->parent_id == cur->tid))
+  { //IS THE KIDDO
+    lock_acquire(&parent->proc_lock);
+    while(child->alive == true)
+    {
+      cond_wait(&parent->proc_cond, &parent->proc_lock);
+    }
+    status = child->exit_code;
+    cond_signal(&parent->proc_cond, &parent->proc_lock);
+    lock_release(&parent->proc_lock);
+  }
+  status = child->exit_code;
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
 
@@ -399,6 +412,7 @@ process_cleanup (void)
   {
     cur_process->alive=false;
     struct running_process* parent = plist_find(&plist, cur_process->parent_id);
+    // cond_signal(&parent->proc_cond, &parent->proc_lock);
     if((parent != NULL && parent->alive == false) || parent==NULL)
     {
       plist_remove(&plist, cur_process->id);

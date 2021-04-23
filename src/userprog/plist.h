@@ -38,6 +38,8 @@
    bool free;
    bool alive;
    char* name;
+   struct lock proc_lock;
+   struct condition proc_cond;
    struct semaphore process_sema;
  };
 

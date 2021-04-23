@@ -207,6 +207,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_PLIST:
     {
       process_print_list();
+      break;
     }
 
     case SYS_SLEEP:
@@ -217,8 +218,15 @@ syscall_handler (struct intr_frame *f)
       break;
     }
 
+    case SYS_EXEC:
+    {
+      f->eax = process_execute(esp[1]);
+      break;
+    }
+
     case SYS_WAIT:
     {
+      f->eax = process_wait(esp[1]);
       break;
     }
 

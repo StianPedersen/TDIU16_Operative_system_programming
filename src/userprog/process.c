@@ -175,6 +175,8 @@ void* setup_main_stack(const char* command_line, void* stack_top)
 void process_init(void)
 {
   plist_init(&plist);
+  struct thread *cur = thread_current ();
+  plist_insert(&plist, cur->tid, 0, cur->name);
 }
 
 /* This function is currently never called. As thread_exit does not
@@ -319,6 +321,7 @@ start_process (struct parameters_to_start_process* parameters)
      // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
      //LÄGG TILL PROCESS I LISTAN
      plist_insert(&plist, thread_current()->tid, parameters->parent_id, thread_current()->name);
+     //printf("THREAD_CURRENT TID I STARTPROCCES o NAME: %d %s", thread_current()->tid, thread_current()->name);
      parameters->P_id = thread_current()->tid;
   }
 
@@ -370,19 +373,25 @@ process_wait (int child_id)
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
-    struct running_process* parent = plist_find(&plist, cur->tid);
+  struct running_process* parent = plist_find(&plist, cur->tid);
+  // if(parent == NULL)
+  // {
+  //   debug("%s#%d: PARENT FINNS EJ(%d) ENTERED\n",
+  //         cur->name, cur->tid, child_id);
+  // }
   if((child != NULL) && (child->parent_id == cur->tid))
-  { //IS THE KIDDO
+  {
+    //Child is found
     lock_acquire(&parent->proc_lock);
     while(child->alive == true)
     {
       cond_wait(&parent->proc_cond, &parent->proc_lock);
     }
     status = child->exit_code;
-    cond_signal(&parent->proc_cond, &parent->proc_lock);
+    //cond_signal(&parent->proc_cond, &parent->proc_lock);
     lock_release(&parent->proc_lock);
   }
-  status = child->exit_code;
+  //status = child->exit_code;
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
 
@@ -410,13 +419,17 @@ process_cleanup (void)
   struct running_process *cur_process = plist_find(&plist, cur->tid);
   if(cur_process != NULL)
   {
-    cur_process->alive=false;
+
     struct running_process* parent = plist_find(&plist, cur_process->parent_id);
-    // cond_signal(&parent->proc_cond, &parent->proc_lock);
+    cur_process->alive=false;
+    lock_acquire(&parent->proc_lock);
+    cond_signal(&parent->proc_cond, &parent->proc_lock);
     if((parent != NULL && parent->alive == false) || parent==NULL)
     {
       plist_remove(&plist, cur_process->id);
     }
+    lock_release(&parent->proc_lock);
+
     //LOOK FOR CHILDREN
     for(int i=0; i<LIST_SIZE; i++)
     {

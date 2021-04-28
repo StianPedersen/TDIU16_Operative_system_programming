@@ -38,61 +38,76 @@
 #define MAX_REPEAT 1000
 #define BUF_SIZE 64
 
-int main(int argc, char* argv[])
+int main(/*int argc, char* argv[]*/)
 {
-  char cmd[BUF_SIZE];
-  unsigned j = 0;
-  unsigned simul = 0;
-  unsigned repeat = 0;
-  // printf("KOMMER TILL LONGRUN \n\n");
-
-  if (argc != 3)
-  {
-    // printf("Usage: %s simultaneous repeat\n"
-    //        "Where 'simultaneous' is the number of simultaneous processes to \n"
-    //        "start before busywaiting a short while, and 'repeat' how many \n"
-    //        "times this should be repeated.\n", argv[0]
-    //  );
-    return -1;
-  }
-
-  simul = atoi(argv[1]);
-  repeat = atoi(argv[2]);
-
-  if (simul > MAX_SIMULTANEOUS)
-  {
-    // printf("This test program is compiled with a limitation to max %d \n"
-    //        "simultaneos processes.\n", MAX_SIMULTANEOUS);
-    return -1;
-  }
-
-  if (repeat > MAX_REPEAT)
-  {
-    // printf("This test program is compiled with a limitation to max %d \n"
-    //        "repetitions.\n", MAX_REPEAT);
-    return -1;
-  }
-
-  // printf("Will try to start a total of %d processes in groups of %d\n",
-  //        simul * repeat, simul);
-
-  //plist();
-  for (j = 0; j < repeat; ++j)
-  {
-    /* you may have to increase the multiple to more than 5 */
-    int ticks = 10 * 1000 * 1000 * j / repeat;
-
-    snprintf(cmd, BUF_SIZE, "generic_parent %s %i %i", "dummy", j*simul, simul);
-
-     exec(cmd);
-
-
-
-    /* since we do not have the wait systemcall yet */
-    //printf("Now entering busy-loop to let some processes finish\n");
-    while (ticks--)
-      ;
-  }
+  printf("PLIST START: \n");
   plist();
+
+  int child = exec("sumargv 1 2 3"); // Starta en barnprocess som summerar argumenten
+
+  printf("\n PLIST EFTER EXEC (SUMARGV)\n");
+  plist();
+
+  int result = wait(child); // Vänta på att den blev klar och hämta resultatet
+
+  printf("\n PLIST EFTER WAIT\n");
+  plist();
+
+  printf("Sum: %d\n", result); // Skriv ut det.
   return 0;
+  // char cmd[BUF_SIZE];
+  // unsigned j = 0;
+  // unsigned simul = 0;
+  // unsigned repeat = 0;
+  // // printf("KOMMER TILL LONGRUN \n\n");
+  //
+  // if (argc != 3)
+  // {
+  //   // printf("Usage: %s simultaneous repeat\n"
+  //   //        "Where 'simultaneous' is the number of simultaneous processes to \n"
+  //   //        "start before busywaiting a short while, and 'repeat' how many \n"
+  //   //        "times this should be repeated.\n", argv[0]
+  //   //  );
+  //   return -1;
+  // }
+  //
+  // simul = atoi(argv[1]);
+  // repeat = atoi(argv[2]);
+  //
+  // if (simul > MAX_SIMULTANEOUS)
+  // {
+  //   // printf("This test program is compiled with a limitation to max %d \n"
+  //   //        "simultaneos processes.\n", MAX_SIMULTANEOUS);
+  //   return -1;
+  // }
+  //
+  // if (repeat > MAX_REPEAT)
+  // {
+  //   // printf("This test program is compiled with a limitation to max %d \n"
+  //   //        "repetitions.\n", MAX_REPEAT);
+  //   return -1;
+  // }
+  //
+  // // printf("Will try to start a total of %d processes in groups of %d\n",
+  // //        simul * repeat, simul);
+  //
+  // //plist();
+  // for (j = 0; j < repeat; ++j)
+  // {
+  //   /* you may have to increase the multiple to more than 5 */
+  //   int ticks = 10 * 1000 * 1000 * j / repeat;
+  //
+  //   snprintf(cmd, BUF_SIZE, "generic_parent %s %i %i", "dummy", j*simul, simul);
+  //
+  //    exec(cmd);
+  //
+  //
+  //
+  //   /* since we do not have the wait systemcall yet */
+  //   //printf("Now entering busy-loop to let some processes finish\n");
+  //   while (ticks--)
+  //     ;
+  // }
+  // plist();
+  //return 0;
 }

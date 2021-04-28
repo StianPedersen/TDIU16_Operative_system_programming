@@ -4,7 +4,8 @@
 #include "tests/main.h"
 
 void
-test_main (void) 
+test_main (void)
 {
   CHECK (create ("quux.dat", 0), "create quux.dat");
 }
+// jag vet tror jag

@@ -70,7 +70,7 @@
  typedef struct file* value_t;
  typedef int key_t;
 
- #define MAP_SIZE 5
+ #define MAP_SIZE 100
 
  struct map
  {

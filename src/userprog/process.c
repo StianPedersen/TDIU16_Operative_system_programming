@@ -73,7 +73,7 @@ void dump(void* ptr, int size)
       printf("\\%o\n", *byte);
 
     if ((i % S) == 0)
-      printf("----------------------------------------------------------------\n");
+      printf("# ----------------------------------------------------------------\n");
   }
 }
 
@@ -188,7 +188,6 @@ void process_exit(int status)
 {
   struct running_process* cur = plist_find(&plist, thread_current()->tid);
   cur->exit_code = status;
-  // printf("\n%s %d\n", "STATUS PÅ EXIT     :", status);
   thread_exit();
 }
 
@@ -321,10 +320,9 @@ start_process (struct parameters_to_start_process* parameters)
      // dump_stack ( PHYS_BASE + 15, PHYS_BASE - if_.esp + 16 );
      //LÄGG TILL PROCESS I LISTAN
      plist_insert(&plist, thread_current()->tid, parameters->parent_id, thread_current()->name);
-     //printf("THREAD_CURRENT TID I STARTPROCCES o NAME: %d %s", thread_current()->tid, thread_current()->name);
+
      parameters->P_id = thread_current()->tid;
   }
-
 
   debug("%s#%d: start_process(\"%s\") DONE\n",
         thread_current()->name,
@@ -332,6 +330,7 @@ start_process (struct parameters_to_start_process* parameters)
         parameters->command_line);
 
   sema_up(&parameters->oursema);
+
 
   /* If load fail, quit. Load may fail for several reasons.
      Some simple examples:
@@ -369,16 +368,17 @@ process_wait (int child_id)
   int status = -1;
   struct thread *cur = thread_current ();
 
+
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
+  if((child == NULL) || (child->alive == false))
+  {
+    return status;
+  }
   struct running_process* parent = plist_find(&plist, cur->tid);
-  // if(parent == NULL)
-  // {
-  //   debug("%s#%d: PARENT FINNS EJ(%d) ENTERED\n",
-  //         cur->name, cur->tid, child_id);
-  // }
+
   if((child != NULL) && (child->parent_id == cur->tid))
   {
     //Child is found
@@ -388,7 +388,6 @@ process_wait (int child_id)
       cond_wait(&parent->proc_cond, &parent->proc_lock);
     }
     status = child->exit_code;
-    //cond_signal(&parent->proc_cond, &parent->proc_lock);
     lock_release(&parent->proc_lock);
   }
   //status = child->exit_code;
@@ -419,17 +418,19 @@ process_cleanup (void)
   struct running_process *cur_process = plist_find(&plist, cur->tid);
   if(cur_process != NULL)
   {
-
+    status = cur_process->exit_code;
+    printf("%s: exit(%d)\n", thread_name(), status);
     struct running_process* parent = plist_find(&plist, cur_process->parent_id);
     cur_process->alive=false;
-    lock_acquire(&parent->proc_lock);
-    cond_signal(&parent->proc_cond, &parent->proc_lock);
+     lock_acquire(&parent->proc_lock);
+     cond_signal(&parent->proc_cond, &parent->proc_lock);
+     lock_release(&parent->proc_lock);
     if((parent != NULL && parent->alive == false) || parent==NULL)
     {
       plist_remove(&plist, cur_process->id);
     }
-    lock_release(&parent->proc_lock);
-
+     // cond_signal(&parent->proc_cond, &parent->proc_lock);
+     // lock_release(&parent->proc_lock);
     //LOOK FOR CHILDREN
     for(int i=0; i<LIST_SIZE; i++)
     {
@@ -439,8 +440,12 @@ process_cleanup (void)
         plist_remove(&plist, plist.content[i].id);
       }
     }
-
   }
+  else
+  {
+    printf("%s: exit(%d)\n", thread_name(), status);
+  }
+
   struct map* map = &cur->ourmap;
   for (int i = 0; i < MAP_SIZE; i++)
   {
@@ -451,9 +456,7 @@ process_cleanup (void)
     }
   }
 
-
-
-  debug("%s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
+  debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
 
   /* Later tests DEPEND on this output to work correct. You will have
    * to find the actual exit status in your process list. It is
@@ -462,7 +465,10 @@ process_cleanup (void)
    * that may sometimes poweroff as soon as process_wait() returns,
    * possibly before the printf is completed.)
    */
-  printf("%s: exit(%d)\n", thread_name(), status);
+  // status = cur->
+  // printf("%s: exit(%d)\n", thread_name(), status);
+  // cond_signal(&parent->proc_cond, &parent->proc_lock);
+  // lock_release(&parent->proc_lock);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

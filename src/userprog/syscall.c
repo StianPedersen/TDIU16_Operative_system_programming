@@ -101,7 +101,7 @@ syscall_handler (struct intr_frame *f)
       {
         const char* file_name= (char*)esp[1];
         unsigned int initial_size = esp[2];
-        printf ("%s %s %d!\n", "VARIABLES:", file_name, initial_size);
+        // printf (" %s %d!\n", file_name, initial_size);
         f->eax = filesys_create(file_name, initial_size);
         break;
       }
@@ -110,18 +110,19 @@ syscall_handler (struct intr_frame *f)
       {
         const char* file_name= (char*)esp[1];
         struct file* openfile = filesys_open(file_name);
-        printf ("%s %s\n", "FILE_NAME:", file_name);
         if(openfile == NULL)
         {
           f->eax = -1;
           break;
         }
 
-        f->eax = map_insert(&thread_current()->ourmap, openfile);
-        if(f->eax == -1)
-        {
-          filesys_close(openfile);
-        }
+          f->eax = map_insert(&thread_current()->ourmap, openfile);
+          int status = f->eax;
+          if(status == -1)
+          {
+            filesys_close(openfile);
+          }
+
         break;
       }
 
@@ -169,7 +170,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_SEEK:
       {
         int fd= esp[1];
-        unsigned int length = esp[2];
+         int length = esp[2];
         struct file* filen = map_find(&thread_current()->ourmap,fd);
         if (filen != NULL && length < file_length(filen))
         {
@@ -220,7 +221,8 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
-      f->eax = process_execute(esp[1]);
+      char * processname = (char*)esp[1];
+      f->eax = process_execute(processname);
       break;
     }
 

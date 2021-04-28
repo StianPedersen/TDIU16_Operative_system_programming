@@ -11,7 +11,7 @@
 void plist_init(struct process_list* plist)
 {
     lock_init(&pid_lock);
-    printf("PLIST INIT\n");
+    // printf("PLIST INIT\n");
     for(int i =0; i<LIST_SIZE; i++)
     {
       plist->content[i].free=true;
@@ -60,7 +60,7 @@ struct running_process* plist_find(struct process_list* plist, int id)
   lock_acquire(&pid_lock);
   for (unsigned int i = 0; i < LIST_SIZE; i++)
     {
-      if(plist->content[i].id == id)
+      if((plist->content[i].id == id) && (plist->content[i].alive != false))
         {
 
           lock_release(&pid_lock);

@@ -372,6 +372,11 @@ process_wait (int child_id)
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
   // struct running_process* parent = plist_find(&plist, cur->tid);
+  if(child == NULL)
+  {
+    debug("%s#%d: NÅT ANNAT process_wait(%d) RETURNS %d\n",
+          cur->name, cur->tid, child_id, status);
+  }
   if((child != NULL) && (child->parent_id == cur->tid))
   {
     //Child is found

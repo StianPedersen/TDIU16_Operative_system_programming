@@ -377,6 +377,7 @@ process_wait (int child_id)
     debug("%s#%d: NÅT ANNAT process_wait(%d) RETURNS %d\n",
           cur->name, cur->tid, child_id, status);
   }
+  
   if((child != NULL) && (child->parent_id == cur->tid))
   {
     //Child is found

@@ -43,7 +43,7 @@ int main(/*int argc, char* argv[]*/)
   printf("PLIST START: \n");
   plist();
 
-  int child = exec("sumargv 1 2 3"); // Starta en barnprocess som summerar argumenten
+  int child = exec("sumargv"); // Starta en barnprocess som summerar argumenten
 
   printf("\n PLIST EFTER EXEC (SUMARGV)\n");
   plist();

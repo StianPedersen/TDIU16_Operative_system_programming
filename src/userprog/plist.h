@@ -47,6 +47,8 @@
 
 struct process_list
 {
+    bool full_list;
+    int  index;
     struct running_process content [LIST_SIZE];
   };
 

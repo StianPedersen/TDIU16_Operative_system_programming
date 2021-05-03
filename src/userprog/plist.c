@@ -34,6 +34,7 @@ int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
           lock_release(&pid_lock);
           plist->content[i].id=id;
           plist->content[i].parent_id=parent_id;
+          plist->content[i].parent_alive=true;
           plist->content[i].alive=true;
           plist->content[i].name=name;
           print_list(plist);
@@ -75,7 +76,7 @@ struct running_process* plist_find(struct process_list* plist, int id)
   lock_acquire(&pid_lock);
   for (unsigned int i = 0; i < LIST_SIZE; i++)
     {
-      if((plist->content[i].id == id) && (plist->content[i].alive != false))
+      if((plist->content[i].id == id) && (plist->content[i].free == false))
         {
           lock_release(&pid_lock);
           return &plist->content[i];
@@ -101,8 +102,8 @@ void plist_remove(struct process_list* plist, int id)
           lock_release(&list_full_lock);
 
           lock_release(&pid_lock);
-          break;
+          return;
         }
     }
-
+lock_release(&pid_lock);
 }

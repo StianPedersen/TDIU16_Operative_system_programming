@@ -28,7 +28,7 @@
      clean, readable format.
 
  */
- #define LIST_SIZE 505
+ #define LIST_SIZE 100
  struct running_process
  {
    int id;

@@ -371,13 +371,13 @@ process_wait (int child_id)
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
   // struct running_process* parent = plist_find(&plist, cur->tid);
-  if(child == NULL || child->alive == false)
+  if(child == NULL)
   {
     debug("%s#%d: NÅT ANNAT process_wait(%d) RETURNS %d\n",
           cur->name, cur->tid, child_id, status);
   }
 
-  else if((child != NULL) && (child->parent_id == cur->tid))
+  if((child != NULL) && (child->parent_id == cur->tid))
   {
     //Child is found
     lock_acquire(&child->proc_lock);
@@ -416,7 +416,7 @@ process_cleanup (void)
   uint32_t       *pd  = cur->pagedir;
   int status = -1;
   struct running_process *cur_process = plist_find(&plist, cur->tid);
-    debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
+    // debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
   if(cur_process != NULL)
   {
     status = cur_process->exit_code;

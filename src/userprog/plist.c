@@ -37,7 +37,7 @@ int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
           plist->content[i].parent_alive=true;
           plist->content[i].alive=true;
           plist->content[i].name=name;
-          print_list(plist);
+          // print_list(plist);
           return id;
         }
     }

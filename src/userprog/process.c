@@ -187,7 +187,6 @@ void process_init(void)
 void process_exit(int status)
 {
   struct running_process* cur = plist_find(&plist, thread_current()->tid);
-
   cur->exit_code = status;
   thread_exit();
 }
@@ -372,13 +371,13 @@ process_wait (int child_id)
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
   // struct running_process* parent = plist_find(&plist, cur->tid);
-  if(child == NULL)
+  if(child == NULL || child->alive == false)
   {
     debug("%s#%d: NÅT ANNAT process_wait(%d) RETURNS %d\n",
           cur->name, cur->tid, child_id, status);
   }
-  
-  if((child != NULL) && (child->parent_id == cur->tid))
+
+  else if((child != NULL) && (child->parent_id == cur->tid))
   {
     //Child is found
     lock_acquire(&child->proc_lock);
@@ -386,7 +385,6 @@ process_wait (int child_id)
     {
       cond_wait(&child->proc_cond, &child->proc_lock);
     }
-    // printf("VI KOMMER HIT OCH CHILD EXIT CODE BORDE KANSKE SÄTTAS\n");
     status = child->exit_code;
     // debug("%s#%d: FELIX SIN LINJA process_wait(%d) RETURNS %d\n",
     // cur->name, cur->tid, child_id, status);
@@ -418,10 +416,10 @@ process_cleanup (void)
   uint32_t       *pd  = cur->pagedir;
   int status = -1;
   struct running_process *cur_process = plist_find(&plist, cur->tid);
+    debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
   if(cur_process != NULL)
   {
     status = cur_process->exit_code;
-    printf("%s: exit(%d)\n", thread_name(), status);
     // struct running_process* parent = plist_find(&plist, cur_process->parent_id);
     cur_process->alive=false;
     //LOOK FOR CHILDREN
@@ -445,10 +443,6 @@ process_cleanup (void)
     cond_signal(&cur_process->proc_cond, &cur_process->proc_lock);
     lock_release(&cur_process->proc_lock);
   }
-  else
-  {
-    printf("%s: exit(%d)\n", thread_name(), status);
-  }
 
   struct map* map = &cur->ourmap;
   for (int i = 0; i < MAP_SIZE; i++)
@@ -459,8 +453,6 @@ process_cleanup (void)
       map_remove(map,i);
     }
   }
-
-  debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
 
   /* Later tests DEPEND on this output to work correct. You will have
    * to find the actual exit status in your process list. It is

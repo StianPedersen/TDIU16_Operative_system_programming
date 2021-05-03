@@ -36,10 +36,10 @@ int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
           plist->content[i].parent_id=parent_id;
           plist->content[i].alive=true;
           plist->content[i].name=name;
+          print_list(plist);
           return id;
         }
     }
-    // printf("JODÅ VI KOMEMR UT UR FOR LOOPEN \n
     lock_release(&pid_lock);
     // //LIST FULL!
     plist->full_list = true;

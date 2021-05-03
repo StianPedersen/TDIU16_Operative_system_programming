@@ -371,11 +371,7 @@ process_wait (int child_id)
   /* Yes! You need to do something good here ! */
   struct running_process* child = plist_find(&plist, child_id);
   // struct running_process* parent = plist_find(&plist, cur->tid);
-  if(child == NULL)
-  {
-    debug("%s#%d: NÅT ANNAT process_wait(%d) RETURNS %d\n",
-          cur->name, cur->tid, child_id, status);
-  }
+
 
   if((child != NULL) && (child->parent_id == cur->tid))
   {
@@ -386,8 +382,7 @@ process_wait (int child_id)
       cond_wait(&child->proc_cond, &child->proc_lock);
     }
     status = child->exit_code;
-    // debug("%s#%d: FELIX SIN LINJA process_wait(%d) RETURNS %d\n",
-    // cur->name, cur->tid, child_id, status);
+    plist_remove(&plist, child_id);
     lock_release(&child->proc_lock);
   }
 
@@ -420,6 +415,7 @@ process_cleanup (void)
   if(cur_process != NULL)
   {
     status = cur_process->exit_code;
+    printf("%s: exit(%d)\n", thread_name(), status);
     // struct running_process* parent = plist_find(&plist, cur_process->parent_id);
     cur_process->alive=false;
     //LOOK FOR CHILDREN
@@ -443,6 +439,11 @@ process_cleanup (void)
     cond_signal(&cur_process->proc_cond, &cur_process->proc_lock);
     lock_release(&cur_process->proc_lock);
   }
+  else
+    {
+      printf("%s: exit(%d)\n", thread_name(), status);
+    }
+
 
   struct map* map = &cur->ourmap;
   for (int i = 0; i < MAP_SIZE; i++)

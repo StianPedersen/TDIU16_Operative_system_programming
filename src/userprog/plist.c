@@ -43,8 +43,8 @@ int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
     }
     lock_release(&pid_lock);
     // //LIST FULL!
-    plist->full_list = true;
     lock_acquire(&list_full_lock);
+    plist->full_list = true;
     while(plist->full_list)
     {
       cond_wait(&list_full_condition, &list_full_lock);
@@ -53,6 +53,7 @@ int plist_insert(struct process_list* plist, int id, int parent_id, char* name)
     plist->content[plist->index].id=id;
     plist->content[plist->index].parent_id=parent_id;
     plist->content[plist->index].alive=true;
+    plist->content[plist->index].parent_alive=true;
     plist->content[plist->index].name=name;
     lock_release(&list_full_lock);
     return id;

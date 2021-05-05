@@ -186,8 +186,6 @@ inode_close (struct inode *inode)
     {
       /* Remove from inode list. */
       list_remove (&inode->elem);
-
-
       /* Deallocate blocks if the file is marked as removed. */
       if (inode->removed)
         {

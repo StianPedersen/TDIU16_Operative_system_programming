@@ -50,16 +50,20 @@ free_map_allocate (size_t cnt, disk_sector_t *sectorp)
 void
 free_map_release (disk_sector_t sector, size_t cnt)
 {
+  lock_acquire(&allocate_lock);
   ASSERT (bitmap_all (free_map, sector, cnt));
   bitmap_set_multiple (free_map, sector, cnt, false);
   bitmap_write (free_map, free_map_file);
+  lock_release(&allocate_lock);
 }
 
 /* Opens the free map file and reads it from disk. */
 void
 free_map_open (void)
 {
+  lock_acquire(&allocate_lock);
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
+  lock_release(&allocate_lock);
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))
@@ -70,7 +74,9 @@ free_map_open (void)
 void
 free_map_close (void)
 {
+  lock_acquire(&allocate_lock);
   file_close (free_map_file);
+  lock_release(&allocate_lock);
 }
 
 /* Creates a new free map file on disk and writes the free map to
@@ -81,9 +87,10 @@ free_map_create (void)
   /* Create inode. */
   if (!inode_create (FREE_MAP_SECTOR, bitmap_file_size (free_map)))
     PANIC ("free map creation failed");
-
   /* Write bitmap to file. */
+  lock_acquire(&allocate_lock);
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
+  lock_release(&allocate_lock);
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_write (free_map, free_map_file))

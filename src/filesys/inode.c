@@ -40,6 +40,12 @@ struct inode
     int open_cnt;                       /* Number of openers. */
     bool removed;                       /* True if deleted, false otherwise. */
     struct inode_disk data;             /* Inode content. */
+    struct semaphore read_sema;
+    struct condition read_cond;
+    struct lock read_lock;
+    struct semaphore write_sema;
+    struct condition write_cond;
+    struct lock write_lock;
   };
 
 
@@ -120,7 +126,6 @@ inode_open (disk_sector_t sector)
   struct inode *inode;
 
     lock_acquire(&open_lock);
-   // lock_release(&open_lock);
   /* Check whether this inode is already open. */
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e))
@@ -146,7 +151,14 @@ inode_open (disk_sector_t sector)
   inode->sector = sector;
   inode->open_cnt = 1;
   inode->removed = false;
-  // lock_release(&open_lock);
+  sema_init(&inode->read_sema,0);
+  sema_init(&inode->write_sema,1);
+  lock_init(&inode->write_lock);
+  lock_init(&inode->read_lock);
+  cond_init(&inode->read_cond);
+  cond_init(&inode->write_cond);
+
+
   disk_read (filesys_disk, inode->sector, &inode->data);
   lock_release(&open_lock);
   return inode;
@@ -158,6 +170,7 @@ inode_reopen (struct inode *inode)
 {
   if (inode != NULL)
   {
+    //Lås här
     inode->open_cnt++;
   }
   return inode;
@@ -215,6 +228,13 @@ inode_remove (struct inode *inode)
 off_t
 inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 {
+  lock_acquire(&inode->read_lock);
+  while(!sema_try(&inode->write_sema))
+  {
+    cond_wait(&inode->read_cond, &inode->read_lock);
+  }
+  lock_release(&inode->read_lock);
+  sema_up(&inode->read_sema);
   uint8_t *buffer = buffer_;
   off_t bytes_read = 0;
   uint8_t *bounce = NULL;
@@ -260,7 +280,13 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       bytes_read += chunk_size;
     }
   free (bounce);
-
+  sema_down(&inode->read_sema);
+  if(!sema_try(&inode->read_sema))
+  {
+    lock_acquire(&inode->write_lock);
+    cond_signal(&inode->write_cond,&inode->write_lock);
+    lock_release(&inode->write_lock);
+  }
   return bytes_read;
 }
 
@@ -273,6 +299,13 @@ off_t
 inode_write_at (struct inode *inode, const void *buffer_, off_t size,
                 off_t offset)
 {
+  lock_acquire(&inode->write_lock);
+  while(sema_try(&inode->read_sema))
+  {
+    cond_wait(&inode->write_cond, &inode->write_lock);
+  }
+  lock_release(&inode->write_lock);
+  sema_down(&inode->write_sema);
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
   uint8_t *bounce = NULL;
@@ -326,7 +359,10 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       bytes_written += chunk_size;
     }
   free (bounce);
-
+  sema_up(&inode->write_sema);
+  lock_acquire(&inode->read_lock);
+  cond_signal(&inode->read_cond, &inode->read_lock);
+  lock_release(&inode->read_lock);
   return bytes_written;
 }
 

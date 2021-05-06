@@ -411,12 +411,10 @@ process_cleanup (void)
   uint32_t       *pd  = cur->pagedir;
   int status = -1;
   struct running_process *cur_process = plist_find(&plist, cur->tid);
-    // debug("# %s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
   if(cur_process != NULL)
   {
     status = cur_process->exit_code;
     printf("%s: exit(%d)\n", thread_name(), status);
-    // struct running_process* parent = plist_find(&plist, cur_process->parent_id);
     cur_process->alive=false;
     //LOOK FOR CHILDREN
     for(int i=0; i<LIST_SIZE; i++)

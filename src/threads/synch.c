@@ -101,6 +101,25 @@ sema_try_down (struct semaphore *sema)
   return success;
 }
 
+bool
+sema_try (struct semaphore *sema)
+{
+  enum intr_level old_level;
+  bool success;
+
+  ASSERT (sema != NULL);
+
+  old_level = intr_disable ();
+  if (sema->value > 0)
+    {
+      success = true;
+    }
+  else
+    success = false;
+  intr_set_level (old_level);
+
+  return success;
+}
 /* Up or "V" operation on a semaphore.  Increments SEMA's value
    and wakes up one thread of those waiting for SEMA, if any.
 
@@ -119,7 +138,6 @@ sema_up (struct semaphore *sema)
   sema->value++;
   intr_set_level (old_level);
 }
-//hek
 
 static void sema_test_helper (void *sema_);
 

@@ -52,13 +52,10 @@ filesys_create (const char *name, off_t initial_size)
 {
   disk_sector_t inode_sector = 0;
   struct dir *dir = dir_open_root ();
-  //LÅS
-  // lock_acquire(&create_lock);
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
                   && inode_create (inode_sector, initial_size)
                   && dir_add (dir, name, inode_sector));
-  // lock_release(&create_lock);
   if (!success && inode_sector != 0)
     free_map_release (inode_sector, 1);
 
@@ -102,9 +99,7 @@ bool
 filesys_remove (const char *name)
 {
   struct dir *dir = dir_open_root ();
-  // lock_acquire(&remove_lock);
   bool success = dir != NULL && dir_remove (dir, name);
-  // lock_release(&remove_lock);
   dir_close (dir);
   return success;
 }

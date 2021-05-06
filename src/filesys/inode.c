@@ -12,7 +12,7 @@
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
 
-static struct lock open_lock;
+static struct lock global_inode_lock;
 
 /* On-disk inode.
    Must be exactly DISK_SECTOR_SIZE bytes long. */
@@ -40,12 +40,12 @@ struct inode
     int open_cnt;                       /* Number of openers. */
     bool removed;                       /* True if deleted, false otherwise. */
     struct inode_disk data;             /* Inode content. */
-    struct semaphore read_sema;
-    struct condition read_cond;
-    struct lock read_lock;
-    struct semaphore write_sema;
+    unsigned int counter;
+    bool writing;
+    struct lock inode_count_lock;
+
+    struct lock cond_lock;
     struct condition write_cond;
-    struct lock write_lock;
   };
 
 
@@ -71,7 +71,7 @@ static struct list open_inodes;
 void
 inode_init (void)
 {
-  lock_init(&open_lock);
+  lock_init(&global_inode_lock);
   list_init (&open_inodes);
 }
 
@@ -125,7 +125,7 @@ inode_open (disk_sector_t sector)
   struct list_elem *e;
   struct inode *inode;
 
-    lock_acquire(&open_lock);
+  lock_acquire(&global_inode_lock);
   /* Check whether this inode is already open. */
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e))
@@ -134,7 +134,7 @@ inode_open (disk_sector_t sector)
       if (inode->sector == sector)
         {
           inode_reopen (inode);
-          lock_release(&open_lock);
+          lock_release(&global_inode_lock);
           return inode;
         }
     }
@@ -143,7 +143,7 @@ inode_open (disk_sector_t sector)
   inode = malloc (sizeof *inode);
   if (inode == NULL)
   {
-    lock_release(&open_lock);
+    lock_release(&global_inode_lock);
     return NULL;
   }
   list_push_front (&open_inodes, &inode->elem);
@@ -151,16 +151,14 @@ inode_open (disk_sector_t sector)
   inode->sector = sector;
   inode->open_cnt = 1;
   inode->removed = false;
-  sema_init(&inode->read_sema,0);
-  sema_init(&inode->write_sema,1);
-  lock_init(&inode->write_lock);
-  lock_init(&inode->read_lock);
-  cond_init(&inode->read_cond);
+  inode->counter = 0;
+  inode->writing = false;
+  lock_init(&inode->cond_lock);
   cond_init(&inode->write_cond);
-
+  lock_init(&inode->inode_count_lock);
 
   disk_read (filesys_disk, inode->sector, &inode->data);
-  lock_release(&open_lock);
+  lock_release(&global_inode_lock);
   return inode;
 }
 
@@ -170,8 +168,10 @@ inode_reopen (struct inode *inode)
 {
   if (inode != NULL)
   {
-    //Lås här
+    //Lås här: Måste låsa open_cnt så det blir korrekt värde i inode_close/open
+    lock_acquire(&inode->inode_count_lock);
     inode->open_cnt++;
+    lock_release(&inode->inode_count_lock);
   }
   return inode;
 }
@@ -193,10 +193,12 @@ inode_close (struct inode *inode)
   if (inode == NULL)
     return;
 
-  lock_acquire(&open_lock);
   /* Release resources if this was the last opener. */
+  lock_acquire(&inode->inode_count_lock);
   if (--inode->open_cnt == 0)
     {
+      //bara en kommer in hit, behover ej låsa list_remove!!
+      lock_release(&inode->inode_count_lock);
       /* Remove from inode list. */
       list_remove (&inode->elem);
       /* Deallocate blocks if the file is marked as removed. */
@@ -207,10 +209,9 @@ inode_close (struct inode *inode)
                             bytes_to_sectors (inode->data.length));
         }
       free (inode);
-      lock_release(&open_lock);
       return;
     }
-    lock_release(&open_lock);
+    lock_release(&inode->inode_count_lock);
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
@@ -219,6 +220,7 @@ void
 inode_remove (struct inode *inode)
 {
   ASSERT (inode != NULL);
+  //lås? behovas ej
   inode->removed = true;
 }
 
@@ -228,13 +230,15 @@ inode_remove (struct inode *inode)
 off_t
 inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
 {
-  lock_acquire(&inode->read_lock);
-  while(!sema_try(&inode->write_sema))
+  // increase counter
+  lock_acquire(&inode->cond_lock);
+  while(inode->writing)
   {
-    cond_wait(&inode->read_cond, &inode->read_lock);
+    cond_wait(&inode->write_cond, &inode->cond_lock);
   }
-  lock_release(&inode->read_lock);
-  sema_up(&inode->read_sema);
+  inode->counter++;
+  lock_release(&inode->cond_lock);
+
   uint8_t *buffer = buffer_;
   off_t bytes_read = 0;
   uint8_t *bounce = NULL;
@@ -279,14 +283,14 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
       offset += chunk_size;
       bytes_read += chunk_size;
     }
+    lock_acquire(&inode->cond_lock);
+    if(--inode->counter == 0)
+    {
+      cond_signal(&inode->write_cond, &inode->cond_lock);
+    }
+    lock_release(&inode->cond_lock);
   free (bounce);
-  sema_down(&inode->read_sema);
-  if(!sema_try(&inode->read_sema))
-  {
-    lock_acquire(&inode->write_lock);
-    cond_signal(&inode->write_cond,&inode->write_lock);
-    lock_release(&inode->write_lock);
-  }
+
   return bytes_read;
 }
 
@@ -299,13 +303,14 @@ off_t
 inode_write_at (struct inode *inode, const void *buffer_, off_t size,
                 off_t offset)
 {
-  lock_acquire(&inode->write_lock);
-  while(sema_try(&inode->read_sema))
+  lock_acquire(&inode->cond_lock);
+  while((inode->counter != 0) || (inode->writing))
   {
-    cond_wait(&inode->write_cond, &inode->write_lock);
+    cond_wait(&inode->write_cond, &inode->cond_lock);
   }
-  lock_release(&inode->write_lock);
-  sema_down(&inode->write_sema);
+    inode->writing = true;
+  lock_release(&inode->cond_lock);
+
   const uint8_t *buffer = buffer_;
   off_t bytes_written = 0;
   uint8_t *bounce = NULL;
@@ -358,11 +363,13 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       offset += chunk_size;
       bytes_written += chunk_size;
     }
+
+  lock_acquire(&inode->cond_lock);
+  inode->writing = false;
+  cond_broadcast(&inode->write_cond, &inode->cond_lock);
+  lock_release(&inode->cond_lock);
+
   free (bounce);
-  sema_up(&inode->write_sema);
-  lock_acquire(&inode->read_lock);
-  cond_signal(&inode->read_cond, &inode->read_lock);
-  lock_release(&inode->read_lock);
   return bytes_written;
 }
 

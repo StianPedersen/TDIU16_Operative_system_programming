@@ -156,6 +156,8 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
     return false;
 
   /* Check that NAME is not in use. */
+  /*Låser den delade resursen dir, mer specifikt är det viktigt att låsa
+    e.in_use då denna används i dir_Remove också*/
   lock_acquire(&dir->dir_lock);
   if (lookup (dir, name, NULL, NULL))
     goto done;
@@ -197,8 +199,11 @@ dir_remove (struct dir *dir, const char *name)
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  /* Find directory entry. */
+  /*Låser den delade resursen dir, mer specifikt är det viktigt att låsa
+    e.in_use då denna används i dir_Remove också. Vore det inte för "goto"
+    så kunde låset bara varit över 216 -> 219*/
   lock_acquire(&dir->dir_lock);
+  /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
     goto done;
 
@@ -229,6 +234,8 @@ bool
 dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
 {
   struct dir_entry e;
+  /*Här låser vi resursen dir, samma som dir_add och dir_Remove så gör vi att
+    e.in_use inte ändras i en annan function medans vi läser här*/
   lock_acquire(&dir->dir_lock);
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e)
     {

@@ -42,7 +42,6 @@ struct inode
     struct inode_disk data;             /* Inode content. */
     unsigned int counter;
     bool writing;
-    struct lock inode_count_lock;
 
     struct lock cond_lock;
     struct condition write_cond;
@@ -124,7 +123,8 @@ inode_open (disk_sector_t sector)
 {
   struct list_elem *e;
   struct inode *inode;
-
+  /* Låser inode så att när vi kollar om några använder inoden/ inoden är öppen /
+      inden är stängd så kan inte detta ändras medans vi kollar.*/
   lock_acquire(&global_inode_lock);
   /* Check whether this inode is already open. */
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
@@ -155,7 +155,6 @@ inode_open (disk_sector_t sector)
   inode->writing = false;
   lock_init(&inode->cond_lock);
   cond_init(&inode->write_cond);
-  lock_init(&inode->inode_count_lock);
 
   disk_read (filesys_disk, inode->sector, &inode->data);
   lock_release(&global_inode_lock);
@@ -168,10 +167,7 @@ inode_reopen (struct inode *inode)
 {
   if (inode != NULL)
   {
-    //Lås här: Måste låsa open_cnt så det blir korrekt värde i inode_close/open
-    lock_acquire(&inode->inode_count_lock);
     inode->open_cnt++;
-    lock_release(&inode->inode_count_lock);
   }
   return inode;
 }
@@ -192,15 +188,20 @@ inode_close (struct inode *inode)
   /* Ignore null pointer. */
   if (inode == NULL)
     return;
-
   /* Release resources if this was the last opener. */
-  lock_acquire(&inode->inode_count_lock);
+
+  /*Låser inode_close med det globala inode låset. Då open_cnt bara används i
+    inode_reopen och den i sin tur är låst via inode_opens globala lås behöver
+    denna ej låsas vidare. Vid att sätta ett globalt lås över hela tar vi bort
+    möjligheten att en annan tråd kan tro att inoden är öppen i fallet då den
+    open_cnt = 0 och den första tråden ska stänga inoden. Ett "simpelt" countlock
+    vill inte fixa det specifika problemet*/
+  lock_acquire(&global_inode_lock);
   if (--inode->open_cnt == 0)
     {
-      //bara en kommer in hit, behover ej låsa list_remove!!
-      lock_release(&inode->inode_count_lock);
       /* Remove from inode list. */
       list_remove (&inode->elem);
+
       /* Deallocate blocks if the file is marked as removed. */
       if (inode->removed)
         {
@@ -208,10 +209,14 @@ inode_close (struct inode *inode)
           free_map_release (inode->data.start,
                             bytes_to_sectors (inode->data.length));
         }
+
+      // lock_release(&inode->inode_count_lock);
       free (inode);
+      lock_release(&global_inode_lock);
       return;
     }
-    lock_release(&inode->inode_count_lock);
+    lock_release(&global_inode_lock);
+    // lock_release(&inode->inode_count_lock);
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
@@ -220,7 +225,6 @@ void
 inode_remove (struct inode *inode)
 {
   ASSERT (inode != NULL);
-  //lås? behovas ej
   inode->removed = true;
 }
 

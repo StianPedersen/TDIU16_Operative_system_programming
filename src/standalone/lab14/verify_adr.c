@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "pagedir.h"
 #include "thread.h"
+#include <stdio.h>
 
 /* verfy_*_lenght are intended to be used in a system call that accept
  * parameters containing suspisious (user mode) adresses. The
@@ -18,12 +19,22 @@
  *
  *  gcc -Wall -Wextra -std=gnu99 -pedantic -m32 -g pagedir.o verify_adr.c
  */
-#error Read comment above and then remove this line.
+
 
 /* Verify all addresses from and including 'start' up to but excluding
  * (start+length). */
 bool verify_fix_length(void* start, int length)
 {
+  //char* adr = pg_round_down(start);
+  void* end = (void*)((char*)start + length -1);
+  for(void* adr = pg_round_down(start); adr != end; adr++)
+  {
+    if(!is_end_of_string(adr))
+    {
+      return true;
+    }
+  }
+  return true;
   // ADD YOUR CODE HERE
 }
 
@@ -34,6 +45,8 @@ bool verify_fix_length(void* start, int length)
 bool verify_variable_length(char* start)
 {
   // ADD YOUR CODE HERE
+  printf("LENGTH: %d\n");
+  return true;
 }
 
 /* Definition of test cases. */
@@ -66,7 +79,7 @@ int main(int argc, char* argv[])
     simulator_set_pagefault_time( atoi(argv[1]) );
   }
   thread_init();
-  
+
   /* Test the algorithm with a given intervall (a buffer). */
   for (i = 0; i < TEST_CASE_COUNT; ++i)
   {
@@ -75,7 +88,7 @@ int main(int argc, char* argv[])
     evaluate(result);
     end_evaluate_algorithm();
   }
-    
+
   /* Test the algorithm with a C-string (start address with
    * terminating null-character).
    */
@@ -83,7 +96,7 @@ int main(int argc, char* argv[])
   {
     start_evaluate_algorithm(test_case[i].start, test_case[i].length);
     result = verify_variable_length(test_case[i].start);
-    evaluate(result);    
+    evaluate(result);
     end_evaluate_algorithm();
   }
   return 0;

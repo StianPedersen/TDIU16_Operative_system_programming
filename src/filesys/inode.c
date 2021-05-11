@@ -123,10 +123,13 @@ inode_open (disk_sector_t sector)
 {
   struct list_elem *e;
   struct inode *inode;
-  /* Låser inode så att när vi kollar om några använder inoden/ inoden är öppen /
-      inoden är stängd så kan inte detta ändras medans vi kollar.*/
-  lock_acquire(&global_inode_lock);
+  /* Vi vill läsa inode_open före vi börjar att kolla på om inoden finns. Detta görs
+     före for loopen. Vi releaser låset i första skedet efter att inode_reopen har körts
+     då vi då är säkre på att open_count har gjorts atomic. Om då inte inoden finns
+     releaser vi låset först efter all allocering av ny inode är gjord så att ingen
+     annan process gör det samme innan vi har hunnit avsluta.*/      
   /* Check whether this inode is already open. */
+  lock_acquire(&global_inode_lock);
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e))
     {
@@ -195,7 +198,7 @@ inode_close (struct inode *inode)
     denna ej låsas vidare. Vid att sätta ett globalt lås över hela tar vi bort
     möjligheten att en annan tråd kan tro att inoden är öppen i fallet då den
     open_cnt = 0 och den första tråden ska stänga inoden. Ett "simpelt" countlock
-    vill inte fixa det specifika problemet*/
+    vill inte fixa det specifika problemet. */
   lock_acquire(&global_inode_lock);
   if (--inode->open_cnt == 0)
     {

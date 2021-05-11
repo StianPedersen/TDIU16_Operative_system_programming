@@ -31,6 +31,12 @@ free_map_allocate (size_t cnt, disk_sector_t *sectorp)
 {
   disk_sector_t sector;
   //Free map den delade resursen
+  /*Vi tar låset innan bitmap_scan_and_flip för att det är här bits är allocated
+    och denna functionen är inte atomic. Det betyder att om fler processer kör denna
+    samtidigt kan de bli allocated de samme bitsen. Vi avsluter den efter if (40)
+    då om den releases direkt efter bitmap_scan_and_flip så kan en annan process
+    gå in i bitmap_scan_and_flip medans vi är i if statement och setter bitsen/writer
+    bitsen. Vilket inte är kul.*/
   lock_acquire(&free_map_lock);
   sector = bitmap_scan_and_flip (free_map, 0, cnt, false);
 
@@ -54,6 +60,9 @@ void
 free_map_release (disk_sector_t sector, size_t cnt)
 {
   //Freemap den delade resursen
+  /*Vi använder free_map i fler funktioner, därmed om vi releaser denna free_map
+  i bitmap_set_multiple och en annan går in och läser från samma plats kan det bli
+  dumt. Vi vill finisha att sätta sectoren avaiable for use i en atomic process. */
   lock_acquire(&free_map_lock);
   ASSERT (bitmap_all (free_map, sector, cnt));
   bitmap_set_multiple (free_map, sector, cnt, false);

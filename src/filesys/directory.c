@@ -6,6 +6,7 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
+static struct lock dir_lock;
 
 
 /* A directory. */
@@ -13,7 +14,6 @@ struct dir
   {
     struct inode *inode;                /* Backing store. */
     off_t pos;                         /* Current position. */
-    struct lock dir_lock;
   };
 
 /* A single directory entry. */
@@ -23,6 +23,12 @@ struct dir_entry
     char name[NAME_MAX + 1];            /* Null terminated file name. */
     bool in_use;                        /* In use or free? */
   };
+
+  void
+  dir_init (void)
+  {
+    lock_init(&dir_lock);
+  }
 
 /* Creates a directory with space for ENTRY_CNT entries in the
    given SECTOR.  Returns true if successful, false on failure. */
@@ -42,7 +48,6 @@ dir_open (struct inode *inode)
     {
       dir->inode = inode;
       dir->pos = 0;
-      lock_init(&dir->dir_lock);
       return dir;
     }
   else
@@ -158,7 +163,7 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
   /* Check that NAME is not in use. */
   /*Låser den delade resursen dir, mer specifikt är det viktigt att låsa
     e.in_use då denna används i dir_Remove också*/
-  lock_acquire(&dir->dir_lock);
+  lock_acquire(&dir_lock);
   if (lookup (dir, name, NULL, NULL))
     goto done;
 
@@ -181,7 +186,7 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
 
  done:
-  lock_release(&dir->dir_lock);
+  lock_release(&dir_lock);
   return success;
 }
 
@@ -202,7 +207,7 @@ dir_remove (struct dir *dir, const char *name)
   /*Låser den delade resursen dir, mer specifikt är det viktigt att låsa
     e.in_use då denna används i dir_Remove också. Vore det inte för "goto"
     så kunde låset bara varit över 216 -> 219*/
-  lock_acquire(&dir->dir_lock);
+  lock_acquire(&dir_lock);
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
     goto done;
@@ -223,7 +228,7 @@ dir_remove (struct dir *dir, const char *name)
 
  done:
   inode_close (inode);
-  lock_release(&dir->dir_lock);
+  lock_release(&dir_lock);
   return success;
 }
 
@@ -236,17 +241,17 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
   struct dir_entry e;
   /*Här låser vi resursen dir, samma som dir_add och dir_Remove så gör vi att
     e.in_use inte ändras i en annan function medans vi läser här*/
-  lock_acquire(&dir->dir_lock);
+  lock_acquire(&dir_lock);
   while (inode_read_at (dir->inode, &e, sizeof e, dir->pos) == sizeof e)
     {
       dir->pos += sizeof e;
       if (e.in_use)
         {
           strlcpy (name, e.name, NAME_MAX + 1);
-          lock_release(&dir->dir_lock);
+          lock_release(&dir_lock);
           return true;
         }
     }
-  lock_release(&dir->dir_lock);
+  lock_release(&dir_lock);
   return false;
 }

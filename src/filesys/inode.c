@@ -43,6 +43,7 @@ struct inode
     unsigned int counter;
     bool writing;
 
+    struct lock countlock;
     struct lock cond_lock;
     struct condition write_cond;
   };
@@ -127,7 +128,7 @@ inode_open (disk_sector_t sector)
      före for loopen. Vi releaser låset i första skedet efter att inode_reopen har körts
      då vi då är säkre på att open_count har gjorts atomic. Om då inte inoden finns
      releaser vi låset först efter all allocering av ny inode är gjord så att ingen
-     annan process gör det samme innan vi har hunnit avsluta.*/      
+     annan process gör det samme innan vi har hunnit avsluta.*/
   /* Check whether this inode is already open. */
   lock_acquire(&global_inode_lock);
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
@@ -157,6 +158,7 @@ inode_open (disk_sector_t sector)
   inode->counter = 0;
   inode->writing = false;
   lock_init(&inode->cond_lock);
+  lock_init(&inode->countlock);
   cond_init(&inode->write_cond);
 
   disk_read (filesys_disk, inode->sector, &inode->data);
@@ -170,7 +172,9 @@ inode_reopen (struct inode *inode)
 {
   if (inode != NULL)
   {
+    lock_acquire(&inode->countlock);
     inode->open_cnt++;
+    lock_release(&inode->countlock);
   }
   return inode;
 }
@@ -198,13 +202,16 @@ inode_close (struct inode *inode)
     denna ej låsas vidare. Vid att sätta ett globalt lås över hela tar vi bort
     möjligheten att en annan tråd kan tro att inoden är öppen i fallet då den
     open_cnt = 0 och den första tråden ska stänga inoden. Ett "simpelt" countlock
-    vill inte fixa det specifika problemet. */
+    vill inte fixa det specifika problemet.*/
   lock_acquire(&global_inode_lock);
+  lock_acquire(&inode->countlock);
   if (--inode->open_cnt == 0)
     {
+      lock_release(&inode->countlock);
       /* Remove from inode list. */
       list_remove (&inode->elem);
 
+      lock_release(&global_inode_lock);
       /* Deallocate blocks if the file is marked as removed. */
       if (inode->removed)
         {
@@ -213,11 +220,10 @@ inode_close (struct inode *inode)
                             bytes_to_sectors (inode->data.length));
         }
 
-      // lock_release(&inode->inode_count_lock);
-      free (inode);
-      lock_release(&global_inode_lock);
+      free(inode);
       return;
     }
+    lock_release(&inode->countlock);
     lock_release(&global_inode_lock);
     // lock_release(&inode->inode_count_lock);
 }

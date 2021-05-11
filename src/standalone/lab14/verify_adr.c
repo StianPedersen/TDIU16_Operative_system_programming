@@ -27,11 +27,22 @@ bool verify_fix_length(void* start, int length)
 {
   //char* adr = pg_round_down(start);
   void* end = (void*)((char*)start + length -1);
-  for(void* adr = pg_round_down(start); adr != end; adr++)
+  void* tmp = start;
+  if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
   {
-    if(!is_end_of_string(adr))
+    return false;
+  }
+  else
+  {
+    for(char* adr = pg_round_down(start); adr != end; adr++)
     {
-      return true;
+      if(pg_no(adr)!=pg_no(tmp))
+      {
+        if(pagedir_get_page(thread_current()->pagedir, adr)== NULL)
+        {
+          tmp=adr;
+        }
+      }
     }
   }
   return true;

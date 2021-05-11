@@ -65,10 +65,7 @@ free_map_release (disk_sector_t sector, size_t cnt)
 void
 free_map_open (void)
 {
-  //Händer en gång, brhöver ej låsas
-  // lock_acquire(&free_map_lock);
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
-  // lock_release(&free_map_lock);
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_read (free_map, free_map_file))
@@ -79,10 +76,7 @@ free_map_open (void)
 void
 free_map_close (void)
 {
-  //Händer en gång, brhöver ej låsas
-  // lock_acquire(&free_map_lock);
   file_close (free_map_file);
-  // lock_release(&free_map_lock);
 }
 
 /* Creates a new free map file on disk and writes the free map to
@@ -94,10 +88,7 @@ free_map_create (void)
   if (!inode_create (FREE_MAP_SECTOR, bitmap_file_size (free_map)))
     PANIC ("free map creation failed");
   /* Write bitmap to file. */
-  //Händer en gång, brhöver ej låsas
-  // lock_acquire(&free_map_lock);
   free_map_file = file_open (inode_open (FREE_MAP_SECTOR));
-  // lock_release(&free_map_lock);
   if (free_map_file == NULL)
     PANIC ("can't open free map");
   if (!bitmap_write (free_map, free_map_file))

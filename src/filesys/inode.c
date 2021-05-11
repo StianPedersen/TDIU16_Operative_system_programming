@@ -124,7 +124,7 @@ inode_open (disk_sector_t sector)
   struct list_elem *e;
   struct inode *inode;
   /* Låser inode så att när vi kollar om några använder inoden/ inoden är öppen /
-      inden är stängd så kan inte detta ändras medans vi kollar.*/
+      inoden är stängd så kan inte detta ändras medans vi kollar.*/
   lock_acquire(&global_inode_lock);
   /* Check whether this inode is already open. */
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);

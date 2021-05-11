@@ -26,7 +26,7 @@
 bool verify_fix_length(void* start, int length)
 {
   //char* adr = pg_round_down(start);
-  void* end = (void*)((char*)start + length -1);
+  void* end = (void*)((char*)start + length);
   void* tmp = start;
   if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
   {
@@ -39,6 +39,10 @@ bool verify_fix_length(void* start, int length)
       if(pg_no(adr)!=pg_no(tmp))
       {
         if(pagedir_get_page(thread_current()->pagedir, adr)== NULL)
+        {
+          return false;
+        }
+        else
         {
           tmp=adr;
         }
@@ -56,8 +60,33 @@ bool verify_fix_length(void* start, int length)
 bool verify_variable_length(char* start)
 {
   // ADD YOUR CODE HERE
-  printf("LENGTH: %d\n");
+  char* adr = start;
+  if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
+  {
+    return false;
+  }
+  else
+  {
+    while(!is_end_of_string(start))
+    {
+      if(pg_no((void*)start)!=pg_no((void*)adr))
+      {
+        if(pagedir_get_page(thread_current()->pagedir, (void*)start)== NULL)
+        {
+          printf("RETURN FALSE ANDRA SKITEN\n");
+          return false;
+        }
+        else
+        {
+          printf("NY PAGE SOM FIINS I MINNET \n");
+          adr=start;
+        }
+    }
+    //printf("SAMMA PAGE GÅR VIDARE EN ADDRES\n");
+    start++;
+  }
   return true;
+}
 }
 
 /* Definition of test cases. */

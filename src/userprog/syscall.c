@@ -74,6 +74,12 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXIT:
       {
+        if(is_kernel_vaddr((void*)esp[1]))
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
         process_exit(esp[1]);
         break;
       }
@@ -81,12 +87,19 @@ syscall_handler (struct intr_frame *f)
     case SYS_READ:
       {
         //los kontrollos
+        if(is_kernel_vaddr((void*)esp[2]))
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
         if(!verify_fix_length((void*)esp[2], esp[3]))
         {
           f->eax = -1;
           process_exit(f->eax);
           break;
         }
+
         int fd= esp[1];
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
@@ -167,6 +180,8 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WRITE:
       {
+        //los kontrollos of the argumentos
+        
         //uno kontrollo
         if(!verify_fix_length((void*)esp[2], esp[3]))
         {
@@ -268,12 +283,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
-      // if(!verify_fix_length((void*)esp[1], 0))
-      // {
-      //   f->eax = -1;
-      //   process_exit(f->eax);
-      //   break;
-      // }
+
       void*tmp = pagedir_get_page(thread_current()->pagedir, (void*)esp[1]);
       if(tmp==NULL)
       {

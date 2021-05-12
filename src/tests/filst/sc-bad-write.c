@@ -57,6 +57,7 @@ void test_main(void)
 
     // Reserve space for 3 parameters (write requires 4).
     base = page - sizeof(int) * 3;
+    //page-base / sizeof(int) = 3
 
     // Call write() with space for 3 parameters (the kernel should kill us for doing this).
     asm volatile (

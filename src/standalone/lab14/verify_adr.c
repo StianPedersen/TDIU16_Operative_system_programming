@@ -50,7 +50,6 @@ bool verify_fix_length(void* start, int length)
     }
   }
   return true;
-  // ADD YOUR CODE HERE
 }
 
 /* Verify all addresses from and including 'start' up to and including

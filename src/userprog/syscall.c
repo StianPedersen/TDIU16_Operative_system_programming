@@ -50,6 +50,19 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
+  //Kontroll
+  if(is_kernel_vaddr(f->esp))
+  {
+    f->eax = -1;
+    process_exit(f->eax);
+  }
+  void*tmp = pagedir_get_page(thread_current()->pagedir, f->esp);
+  //Tmp is a virtual adress, first check if its NULL
+  if(tmp==NULL)
+  {
+    f->eax = -1;
+    process_exit(f->eax);
+  }
 
   switch (esp[0] /* retrive syscall number */ )
   {
@@ -67,6 +80,13 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_READ:
       {
+        //los kontrollos
+        if(!verify_fix_length((void*)esp[2], esp[3]))
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
         int fd= esp[1];
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
@@ -99,15 +119,34 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_CREATE:
       {
+        if(!verify_fix_length((void*)esp[1], esp[2]))
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
         const char* file_name= (char*)esp[1];
         unsigned int initial_size = esp[2];
-        // printf (" %s %d!\n", file_name, initial_size);
         f->eax = filesys_create(file_name, initial_size);
         break;
       }
 
     case SYS_OPEN:
       {
+        // if(!verify_fix_length((void*)esp[1], 0))
+        // {
+        //   f->eax = -1;
+        //   process_exit(f->eax);
+        //   break;
+        // }
+        void*tmp = pagedir_get_page(thread_current()->pagedir, (void*)esp[1]);
+        if(tmp==NULL)
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
+
         const char* file_name= (char*)esp[1];
         struct file* openfile = filesys_open(file_name);
         if(openfile == NULL)
@@ -128,10 +167,18 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WRITE:
       {
+        //uno kontrollo
+        if(!verify_fix_length((void*)esp[2], esp[3]))
+        {
+          f->eax = -1;
+          process_exit(f->eax);
+          break;
+        }
         int fd= esp[1];
         char* buffer = (char*)esp[2];
         unsigned int length = esp[3];
         struct file* filen = map_find(&thread_current()->ourmap,fd);
+
         if(fd == STDOUT_FILENO)
         {
           putbuf(buffer, length);
@@ -221,6 +268,19 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
+      // if(!verify_fix_length((void*)esp[1], 0))
+      // {
+      //   f->eax = -1;
+      //   process_exit(f->eax);
+      //   break;
+      // }
+      void*tmp = pagedir_get_page(thread_current()->pagedir, (void*)esp[1]);
+      if(tmp==NULL)
+      {
+        f->eax = -1;
+        process_exit(f->eax);
+        break;
+      }
       char * processname = (char*)esp[1];
       f->eax = process_execute(processname);
       break;
@@ -242,3 +302,68 @@ syscall_handler (struct intr_frame *f)
     }
   }
 }
+
+/* Verify all addresses from and including 'start' up to but excluding
+ * (start+length). */
+bool verify_fix_length(void* start, int length)
+{
+  //char* adr = pg_round_down(start);
+  void* end = (void*)((char*)start + length);
+  void* tmp = start;
+  if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
+  {
+    return false;
+  }
+  else
+  {
+    for(char* adr = pg_round_down(start); adr != end; adr++)
+    {
+      if(pg_no(adr)!=pg_no(tmp))
+      {
+        if(pagedir_get_page(thread_current()->pagedir, adr)== NULL)
+        {
+          return false;
+        }
+        else
+        {
+          tmp=adr;
+        }
+      }
+    }
+  }
+  return true;
+  // ADD YOUR CODE HERE
+}
+
+/* Verify all addresses from and including 'start' up to and including
+ * the address first containg a null-character ('\0'). (The way
+ * C-strings are stored.)
+ */
+// bool verify_variable_length(char* start)
+// {
+//   // ADD YOUR CODE HERE
+//   char* adr = start;
+//   if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
+//   {
+//     return false;
+//   }
+//   else
+//   {
+//     while(!is_end_of_string(start))
+//     {
+//       start++;
+//       if(pg_no((void*)start)!=pg_no((void*)adr))
+//       {
+//         if(pagedir_get_page(thread_current()->pagedir, (void*)start)== NULL)
+//         {
+//           return false;
+//         }
+//         else
+//         {
+//           adr=start;
+//         }
+//     }
+//   }
+//   return true;
+// }
+// }

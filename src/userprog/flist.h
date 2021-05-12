@@ -65,7 +65,7 @@
  */
  #include <stdbool.h>
  #include <stdio.h>
-  // #define PANIC(message) do { printf("PANIC: %s\n", message); exit(1); } while (0)
+ // #define PANIC(message) do { printf("PANIC: %s\n", message); exit(1); } while (0)
 
  typedef struct file* value_t;
  typedef int key_t;

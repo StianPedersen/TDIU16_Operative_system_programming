@@ -69,21 +69,18 @@ bool verify_variable_length(char* start)
   {
     while(!is_end_of_string(start))
     {
+      start++;
       if(pg_no((void*)start)!=pg_no((void*)adr))
       {
         if(pagedir_get_page(thread_current()->pagedir, (void*)start)== NULL)
         {
-          printf("RETURN FALSE ANDRA SKITEN\n");
           return false;
         }
         else
         {
-          printf("NY PAGE SOM FIINS I MINNET \n");
           adr=start;
         }
     }
-    //printf("SAMMA PAGE GÅR VIDARE EN ADDRES\n");
-    start++;
   }
   return true;
 }

@@ -50,8 +50,19 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
-  //Kontroll
-  if(is_kernel_vaddr(f->esp))
+  if(!verify_fix_length(f->esp, sizeof(esp)))
+  {
+    f->eax = -1;
+    process_exit(f->eax);
+  }
+  if(esp[0] < 0 || esp[0] > 21)
+  {
+    f->eax = -1;
+    process_exit(f->eax);
+  }
+
+  int sys_read_arg_count = argc[esp[0]];
+  if(!verify_fix_length(esp+1, (sizeof(esp)*sys_read_arg_count)))
   {
     f->eax = -1;
     process_exit(f->eax);
@@ -63,6 +74,7 @@ syscall_handler (struct intr_frame *f)
     f->eax = -1;
     process_exit(f->eax);
   }
+
 
   switch (esp[0] /* retrive syscall number */ )
   {
@@ -76,6 +88,7 @@ syscall_handler (struct intr_frame *f)
       {
         if(is_kernel_vaddr((void*)esp[1]))
         {
+
           f->eax = -1;
           process_exit(f->eax);
           break;
@@ -146,12 +159,6 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_OPEN:
       {
-        // if(!verify_fix_length((void*)esp[1], 0))
-        // {
-        //   f->eax = -1;
-        //   process_exit(f->eax);
-        //   break;
-        // }
         void*tmp = pagedir_get_page(thread_current()->pagedir, (void*)esp[1]);
         if(tmp==NULL)
         {
@@ -180,8 +187,6 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WRITE:
       {
-        //los kontrollos of the argumentos
-        
         //uno kontrollo
         if(!verify_fix_length((void*)esp[2], esp[3]))
         {
@@ -232,7 +237,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_SEEK:
       {
         int fd= esp[1];
-         int length = esp[2];
+        int length = esp[2];
         struct file* filen = map_find(&thread_current()->ourmap,fd);
         if (filen != NULL && length < file_length(filen))
         {
@@ -318,6 +323,10 @@ syscall_handler (struct intr_frame *f)
 bool verify_fix_length(void* start, int length)
 {
   //char* adr = pg_round_down(start);
+  if(is_kernel_vaddr(start))
+  {
+    return false;
+  }
   void* end = (void*)((char*)start + length);
   void* tmp = start;
   if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
@@ -331,6 +340,10 @@ bool verify_fix_length(void* start, int length)
       if(pg_no(adr)!=pg_no(tmp))
       {
         if(pagedir_get_page(thread_current()->pagedir, adr)== NULL)
+        {
+          return false;
+        }
+        if(is_kernel_vaddr(adr))
         {
           return false;
         }
@@ -349,31 +362,37 @@ bool verify_fix_length(void* start, int length)
  * the address first containg a null-character ('\0'). (The way
  * C-strings are stored.)
  */
-// bool verify_variable_length(char* start)
-// {
-//   // ADD YOUR CODE HERE
-//   char* adr = start;
-//   if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
-//   {
-//     return false;
-//   }
-//   else
-//   {
-//     while(!is_end_of_string(start))
-//     {
-//       start++;
-//       if(pg_no((void*)start)!=pg_no((void*)adr))
-//       {
-//         if(pagedir_get_page(thread_current()->pagedir, (void*)start)== NULL)
-//         {
-//           return false;
-//         }
-//         else
-//         {
-//           adr=start;
-//         }
-//     }
-//   }
-//   return true;
-// }
-// }
+bool verify_variable_length(char* start)
+{
+  // ADD YOUR CODE HERE
+  char* adr = start;
+  if(pagedir_get_page(thread_current()->pagedir, start)== NULL)
+  {
+    return false;
+  }
+  else
+  {
+    // while(!is_end_of_string(start))
+    // {
+    while(*start != '\0')
+    {
+      start++;
+      if(pg_no((void*)start)!=pg_no((void*)adr))
+      {
+        if(is_kernel_vaddr(start))
+        {
+          return false;
+        }
+        if(pagedir_get_page(thread_current()->pagedir, (void*)start)== NULL)
+        {
+          return false;
+        }
+        else
+        {
+          adr=start;
+        }
+    }
+  }
+  return true;
+}
+}
